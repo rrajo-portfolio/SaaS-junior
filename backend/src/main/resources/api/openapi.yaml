@@ -596,6 +596,232 @@ paths:
           description: Current role cannot mutate tenant invoices
         "404":
           description: Invoice not found in tenant
+  /api/tenants/{tenantId}/einvoices:
+    get:
+      operationId: listTenantEInvoices
+      summary: B2B e-invoice messages scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant B2B e-invoice messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EInvoiceMessage"
+    post:
+      operationId: createTenantEInvoice
+      summary: Create a UBL or Facturae preparation payload for an issued invoice
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEInvoiceRequest"
+      responses:
+        "201":
+          description: B2B e-invoice message created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EInvoiceMessage"
+        "400":
+          description: Invoice is not issued or syntax is unsupported
+        "403":
+          description: Current role cannot mutate B2B e-invoice messages
+        "409":
+          description: Invoice already has an e-invoice message
+  /api/tenants/{tenantId}/einvoices/{messageId}:
+    get:
+      operationId: getTenantEInvoice
+      summary: Read a B2B e-invoice message
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: B2B e-invoice message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EInvoiceMessage"
+        "404":
+          description: Message not found in tenant
+  /api/tenants/{tenantId}/einvoices/{messageId}/payload:
+    get:
+      operationId: getTenantEInvoicePayload
+      summary: Download the no-store XML payload for a B2B e-invoice message
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: XML payload. It is preparation evidence, not official interoperability proof.
+          content:
+            application/xml:
+              schema:
+                type: string
+  /api/tenants/{tenantId}/einvoices/{messageId}/status:
+    patch:
+      operationId: updateTenantEInvoiceStatus
+      summary: Update exchange and commercial acceptance or rejection status
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEInvoiceStatusRequest"
+      responses:
+        "200":
+          description: B2B e-invoice message updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EInvoiceMessage"
+  /api/tenants/{tenantId}/einvoices/{messageId}/events:
+    get:
+      operationId: listTenantEInvoiceEvents
+      summary: Append-only audit events for a B2B e-invoice message
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: E-invoice audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EInvoiceEvent"
+  /api/tenants/{tenantId}/einvoices/{messageId}/payment-events:
+    get:
+      operationId: listTenantEInvoicePaymentEvents
+      summary: Payment status events for a B2B e-invoice message
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Payment status events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EInvoicePaymentEvent"
+    post:
+      operationId: createTenantEInvoicePaymentEvent
+      summary: Create a partial or full payment event for a B2B e-invoice message
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: messageId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEInvoicePaymentEventRequest"
+      responses:
+        "201":
+          description: Payment event created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EInvoicePaymentEvent"
   /api/tenants/{tenantId}/verifactu/records:
     get:
       operationId: listTenantSifRecords
@@ -1381,6 +1607,188 @@ components:
         - ISSUED
         - RECTIFIED
         - CANCELLED
+    EInvoiceMessage:
+      type: object
+      required:
+        - id
+        - tenantId
+        - invoiceId
+        - invoiceNumber
+        - issuerLegalName
+        - customerLegalName
+        - syntax
+        - direction
+        - exchangeStatus
+        - commercialStatus
+        - paymentStatus
+        - payloadSha256
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+        issuerLegalName:
+          type: string
+        customerLegalName:
+          type: string
+        syntax:
+          $ref: "#/components/schemas/EInvoiceSyntax"
+        direction:
+          $ref: "#/components/schemas/EInvoiceDirection"
+        exchangeStatus:
+          $ref: "#/components/schemas/EInvoiceExchangeStatus"
+        commercialStatus:
+          $ref: "#/components/schemas/EInvoiceCommercialStatus"
+        paymentStatus:
+          $ref: "#/components/schemas/EInvoicePaymentStatus"
+        payloadSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        statusReason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateEInvoiceRequest:
+      type: object
+      required:
+        - invoiceId
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+        syntax:
+          $ref: "#/components/schemas/EInvoiceSyntax"
+    UpdateEInvoiceStatusRequest:
+      type: object
+      properties:
+        exchangeStatus:
+          $ref: "#/components/schemas/EInvoiceExchangeStatus"
+        commercialStatus:
+          $ref: "#/components/schemas/EInvoiceCommercialStatus"
+        reason:
+          type: string
+          maxLength: 500
+    CreateEInvoicePaymentEventRequest:
+      type: object
+      required:
+        - amount
+        - paymentStatus
+      properties:
+        amount:
+          type: number
+          format: decimal
+          exclusiveMinimum: 0
+        paymentStatus:
+          $ref: "#/components/schemas/EInvoicePaymentStatus"
+        paidAt:
+          type: string
+          format: date-time
+        reference:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+    EInvoiceEvent:
+      type: object
+      required:
+        - id
+        - messageId
+        - eventType
+        - eventAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+            - MESSAGE_GENERATED
+            - EXCHANGE_STATUS_CHANGED
+            - COMMERCIAL_STATUS_CHANGED
+            - PAYMENT_STATUS_CHANGED
+            - PAYLOAD_EXPORTED
+        details:
+          type: string
+        eventAt:
+          type: string
+          format: date-time
+    EInvoicePaymentEvent:
+      type: object
+      required:
+        - id
+        - messageId
+        - paymentStatus
+        - amount
+        - paidAt
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        messageId:
+          type: string
+          format: uuid
+        paymentStatus:
+          $ref: "#/components/schemas/EInvoicePaymentStatus"
+        amount:
+          type: number
+          format: decimal
+        paidAt:
+          type: string
+          format: date-time
+        paymentReference:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    EInvoiceSyntax:
+      type: string
+      enum:
+        - UBL
+        - FACTURAE
+    EInvoiceDirection:
+      type: string
+      enum:
+        - OUTBOUND
+        - INBOUND
+    EInvoiceExchangeStatus:
+      type: string
+      enum:
+        - GENERATED
+        - SENT
+        - RECEIVED
+    EInvoiceCommercialStatus:
+      type: string
+      enum:
+        - PENDING
+        - ACCEPTED
+        - REJECTED
+    EInvoicePaymentStatus:
+      type: string
+      enum:
+        - UNPAID
+        - PARTIALLY_PAID
+        - PAID
     SifRecord:
       type: object
       required:

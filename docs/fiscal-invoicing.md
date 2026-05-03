@@ -15,7 +15,7 @@ Phase 5 adds base invoice modelling and deterministic tax calculations.
 
 - Verifactu/SIF record generation.
 - AEAT transmission.
-- B2B e-invoice serialization.
+- B2B e-invoice serialization through the phase 8 module.
 - Legal certification of tax compliance.
 
 Those concerns are handled by later phases.
