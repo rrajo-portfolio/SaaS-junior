@@ -735,6 +735,168 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/SifEvent"
+  /api/tenants/{tenantId}/verifactu/records/{recordId}/qr:
+    get:
+      operationId: getTenantSifQrPayload
+      summary: Read or create the internal Verifactu QR payload for a SIF record
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: QR payload metadata. This is internal evidence and not a legal certification.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifQrPayload"
+        "404":
+          description: SIF record not found in tenant
+  /api/tenants/{tenantId}/verifactu/records/{recordId}/qr.svg:
+    get:
+      operationId: getTenantSifQrSvg
+      summary: Render a no-store SVG QR code for a SIF record
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: QR SVG. Response must be no-store.
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+        "404":
+          description: SIF record not found in tenant
+  /api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions:
+    get:
+      operationId: listTenantSifTransmissions
+      summary: List local AEAT transmission attempts for a SIF record
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Transmission attempts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SifTransmissionAttempt"
+    post:
+      operationId: createTenantSifTransmission
+      summary: Create a stub or sandbox AEAT transmission attempt without production dispatch
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAeatTransmissionRequest"
+      responses:
+        "201":
+          description: Local transmission attempt created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifTransmissionAttempt"
+        "400":
+          description: Production dispatch is disabled or the requested mode is invalid
+        "403":
+          description: Current role cannot create transmission attempts
+  /api/tenants/{tenantId}/verifactu/system-declarations/drafts:
+    get:
+      operationId: listTenantSifSystemDeclarationDrafts
+      summary: List Verifactu system declaration drafts scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: System declaration drafts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SifSystemDeclaration"
+    post:
+      operationId: createTenantSifSystemDeclarationDraft
+      summary: Create a reviewable Verifactu system declaration draft
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "201":
+          description: System declaration draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifSystemDeclaration"
+        "403":
+          description: Current role cannot create declaration drafts
   /api/tenants/{tenantId}/verifactu/exports:
     get:
       operationId: listTenantSifExports
@@ -1363,6 +1525,115 @@ components:
           type: integer
         lastHash:
           type: string
+    SifQrPayload:
+      type: object
+      required:
+        - id
+        - tenantId
+        - recordId
+        - qrPayload
+        - qrSha256
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        recordId:
+          type: string
+          format: uuid
+        qrPayload:
+          type: string
+          description: Internal Verifactu-style verification URL used to render a QR code.
+        qrSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        createdAt:
+          type: string
+          format: date-time
+    CreateAeatTransmissionRequest:
+      type: object
+      properties:
+        mode:
+          $ref: "#/components/schemas/AeatTransmissionMode"
+    SifTransmissionAttempt:
+      type: object
+      required:
+        - id
+        - tenantId
+        - recordId
+        - mode
+        - status
+        - requestPayload
+        - responsePayload
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        recordId:
+          type: string
+          format: uuid
+        mode:
+          $ref: "#/components/schemas/AeatTransmissionMode"
+        status:
+          $ref: "#/components/schemas/SifTransmissionStatus"
+        requestPayload:
+          type: string
+        responsePayload:
+          type: string
+          description: Stubbed response payload. External AEAT production dispatch is disabled by default.
+        createdAt:
+          type: string
+          format: date-time
+    SifSystemDeclaration:
+      type: object
+      required:
+        - id
+        - tenantId
+        - status
+        - payload
+        - payloadSha256
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - DRAFT
+        payload:
+          type: string
+          description: Reviewable declaration draft payload. It is not a certification.
+        payloadSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        createdAt:
+          type: string
+          format: date-time
+    AeatTransmissionMode:
+      type: string
+      enum:
+        - STUB
+        - SANDBOX
+        - PRODUCTION
+    SifTransmissionStatus:
+      type: string
+      enum:
+        - STUB_ACCEPTED
+        - SANDBOX_QUEUED
+        - PRODUCTION_BLOCKED
     SifRecordType:
       type: string
       enum:

@@ -121,6 +121,15 @@ type SifRecordSummary = {
   createdAt: string
 }
 
+type SifSystemDeclarationSummary = {
+  id: string
+  tenantId: string
+  status: string
+  payload: string
+  payloadSha256: string
+  createdAt: string
+}
+
 type CompanyFormState = {
   legalName: string
   taxId: string
@@ -192,6 +201,7 @@ function App() {
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
   const [sifRecords, setSifRecords] = useState<SifRecordSummary[]>([])
+  const [systemDeclarations, setSystemDeclarations] = useState<SifSystemDeclarationSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
   const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -272,14 +282,19 @@ function App() {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
       }),
+      fetch(apiUrl(`/tenants/${activeTenantId}/verifactu/system-declarations/drafts`), {
+        headers: authHeaders(activeTenantId),
+        signal: controller.signal,
+      }),
     ])
-      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse, sifRecordsResponse]) => {
+      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse, sifRecordsResponse, declarationsResponse]) => {
         if (
           !companiesResponse.ok ||
           !relationshipsResponse.ok ||
           !documentsResponse.ok ||
           !invoicesResponse.ok ||
-          !sifRecordsResponse.ok
+          !sifRecordsResponse.ok ||
+          !declarationsResponse.ok
         ) {
           throw new Error('Company scope failed')
         }
@@ -288,11 +303,13 @@ function App() {
         const tenantDocuments = (await documentsResponse.json()) as DocumentSummary[]
         const tenantInvoices = (await invoicesResponse.json()) as InvoiceSummary[]
         const tenantSifRecords = (await sifRecordsResponse.json()) as SifRecordSummary[]
+        const tenantDeclarations = (await declarationsResponse.json()) as SifSystemDeclarationSummary[]
         setCompanies(tenantCompanies)
         setRelationships(tenantRelationships)
         setDocuments(tenantDocuments)
         setInvoices(tenantInvoices)
         setSifRecords(tenantSifRecords)
+        setSystemDeclarations(tenantDeclarations)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -383,6 +400,7 @@ function App() {
   )
   const invoiceTotal = invoices.reduce((total, invoice) => total + Number(invoice.total), 0)
   const latestSifRecord = sifRecords[0]
+  const latestSystemDeclaration = systemDeclarations[0]
 
   const metricCards = useMemo(
     () => [
@@ -753,6 +771,14 @@ function App() {
             <div>
               <span>Ultimo hash</span>
               <code>{latestSifRecord?.recordHash.slice(0, 16) ?? 'sin-registros'}</code>
+            </div>
+            <div>
+              <span>Declaraciones</span>
+              <strong>{systemDeclarations.length}</strong>
+            </div>
+            <div>
+              <span>Ultimo borrador</span>
+              <code>{latestSystemDeclaration?.payloadSha256.slice(0, 16) ?? 'sin-borrador'}</code>
             </div>
           </div>
 

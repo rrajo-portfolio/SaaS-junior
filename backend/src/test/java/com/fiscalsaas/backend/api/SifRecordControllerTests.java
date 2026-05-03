@@ -3,6 +3,8 @@ package com.fiscalsaas.backend.api;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -144,6 +146,87 @@ class SifRecordControllerTests {
 						.content("{}"))
 				.andExpect(status().isConflict())
 				.andExpect(jsonPath("$.code").value("conflict"));
+	}
+
+	@Test
+	void createsQrPayloadStubTransmissionAndSystemDeclarationDraft() throws Exception {
+		String invoiceId = createIssuedInvoice("SIF-QR-" + System.nanoTime());
+		String registrationResponse = registerInvoice(invoiceId);
+		JsonNode registration = objectMapper.readTree(registrationResponse);
+		String registrationId = registration.get("id").asText();
+
+		mockMvc.perform(get("/api/tenants/{tenantId}/verifactu/records/{recordId}/qr", TENANT_NORTE, registrationId)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.recordId").value(registrationId))
+				.andExpect(jsonPath("$.qrPayload").value(org.hamcrest.Matchers.containsString("https://verifactu.local/verify")))
+				.andExpect(jsonPath("$.qrPayload").value(org.hamcrest.Matchers.containsString("invoice=SIF-QR-")))
+				.andExpect(jsonPath("$.qrSha256").value(org.hamcrest.Matchers.matchesPattern("[0-9a-f]{64}")));
+
+		mockMvc.perform(get("/api/tenants/{tenantId}/verifactu/records/{recordId}/qr.svg", TENANT_NORTE, registrationId)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+				.andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("image/svg+xml")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("<svg")))
+				.andExpect(content().string(org.hamcrest.Matchers.containsString("shape-rendering=\"crispEdges\"")));
+
+		String transmissionResponse = mockMvc.perform(post("/api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions", TENANT_NORTE, registrationId)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "mode": "stub"
+								}
+								"""))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.mode").value("STUB"))
+				.andExpect(jsonPath("$.status").value("STUB_ACCEPTED"))
+				.andExpect(jsonPath("$.responsePayload").value(org.hamcrest.Matchers.containsString("\"externalTransmission\":false")))
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+		String transmissionId = objectMapper.readTree(transmissionResponse).get("id").asText();
+
+		mockMvc.perform(get("/api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions", TENANT_NORTE, registrationId)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(transmissionId));
+
+		mockMvc.perform(post("/api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions", TENANT_NORTE, registrationId)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE)
+						.contentType(MediaType.APPLICATION_JSON)
+						.content("""
+								{
+								  "mode": "production"
+								}
+								"""))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.code").value("validation_error"));
+
+		String declarationResponse = mockMvc.perform(post("/api/tenants/{tenantId}/verifactu/system-declarations/drafts", TENANT_NORTE)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isCreated())
+				.andExpect(jsonPath("$.status").value("DRAFT"))
+				.andExpect(jsonPath("$.payload").value(org.hamcrest.Matchers.containsString("\"certified\":false")))
+				.andExpect(jsonPath("$.payload").value(org.hamcrest.Matchers.containsString("\"reviewRequired\":true")))
+				.andExpect(jsonPath("$.payloadSha256").value(org.hamcrest.Matchers.matchesPattern("[0-9a-f]{64}")))
+				.andReturn()
+				.getResponse()
+				.getContentAsString();
+		String declarationId = objectMapper.readTree(declarationResponse).get("id").asText();
+
+		mockMvc.perform(get("/api/tenants/{tenantId}/verifactu/system-declarations/drafts", TENANT_NORTE)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].id").value(declarationId));
 	}
 
 	@Test

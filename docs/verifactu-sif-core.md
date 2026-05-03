@@ -28,6 +28,12 @@ Phase 6 introduces an internal SIF evidence engine. It is not a certification of
 - `GET /api/tenants/{tenantId}/verifactu/records/verify`
 - `PATCH /api/tenants/{tenantId}/verifactu/records/{recordId}/cancel`
 - `GET /api/tenants/{tenantId}/verifactu/records/{recordId}/events`
+- `GET /api/tenants/{tenantId}/verifactu/records/{recordId}/qr`
+- `GET /api/tenants/{tenantId}/verifactu/records/{recordId}/qr.svg`
+- `GET /api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions`
+- `POST /api/tenants/{tenantId}/verifactu/records/{recordId}/transmissions`
 - `GET /api/tenants/{tenantId}/verifactu/exports`
 - `POST /api/tenants/{tenantId}/verifactu/exports`
 - `GET /api/tenants/{tenantId}/verifactu/exports/{exportId}`
+- `GET /api/tenants/{tenantId}/verifactu/system-declarations/drafts`
+- `POST /api/tenants/{tenantId}/verifactu/system-declarations/drafts`
