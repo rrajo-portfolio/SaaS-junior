@@ -12,7 +12,7 @@ Review date: 2026-05-03
 | Preprod Docker Compose | PASS | `infra/docker/docker-compose.preprod.yml` validates with a temporary local env. |
 | Kubernetes preprod | PASS | kind cluster `fiscal-saas-preprod`, namespace, workloads, services, NetworkPolicies and optional Ingress are present. |
 | MySQL migrations | PASS | Flyway migrations V1 through V8 validated in backend tests and MySQL Testcontainers. |
-| Jenkins from scratch | PASS | `infra/jenkins/docker-compose.jenkins.yml`, controller Dockerfile, plugins, JCasC and Jenkinsfile exist. Jenkins build #8 passed. |
+| Jenkins from scratch | PASS | `infra/jenkins/docker-compose.jenkins.yml`, controller Dockerfile, plugins, JCasC and Jenkinsfile exist. Jenkins build #9 passed on main and parameterized build #10 passed with preprod Playwright against main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3`. |
 | SonarQube | NOT_INCLUDED | No SonarQube service or token is committed. Future phase required before marking PASS. |
 | Keycloak/OIDC | NOT_INCLUDED | Current auth is demo header auth. Future Keycloak integration required before production. |
 | Nginx proxy/cache | PASS | `infra/nginx/nginx.conf` enforces no-store API and immutable cache for versioned assets only. |

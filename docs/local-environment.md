@@ -21,7 +21,11 @@ Date: 2026-05-03
 
 ## Current Blockers
 
-- `BLOCKED_BY_GITHUB_PERMISSIONS`: PR creation through the available integration returned forbidden permissions.
+- None for the current release candidate validation.
+
+## Known Limitations
+
+- PR creation through the available GitHub integration returned forbidden permissions and `gh` is not installed. This is limited to PR automation; `main` was merged and pushed successfully through git CLI.
 
 ## Validated Runtime
 

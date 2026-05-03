@@ -27,7 +27,8 @@ This release candidate includes:
 | Local Playwright | PASS |
 | Docker Compose local/preprod config | PASS |
 | Jenkins controller bootstrap | PASS |
-| Jenkins pipeline build #8 | PASS |
+| Jenkins pipeline build #9 on main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3` | PASS |
+| Jenkins parameterized build #10 with preprod Playwright on main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3` | PASS |
 | Kubernetes node/pod readiness | PASS |
 | Kubernetes smoke script | PASS |
 | Preprod Playwright critical flows | PASS |
