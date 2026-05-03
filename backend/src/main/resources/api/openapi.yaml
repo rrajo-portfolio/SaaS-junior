@@ -477,6 +477,125 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DocumentEvent"
+  /api/tenants/{tenantId}/invoices:
+    get:
+      operationId: listTenantInvoices
+      summary: Fiscal invoices scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invoice"
+    post:
+      operationId: createTenantInvoice
+      summary: Create a fiscal invoice draft with calculated totals
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateInvoiceRequest"
+      responses:
+        "201":
+          description: Invoice draft created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "400":
+          description: Validation failed
+        "403":
+          description: Current role cannot mutate tenant invoices
+        "409":
+          description: Invoice number already exists in tenant
+  /api/tenants/{tenantId}/invoices/{invoiceId}:
+    get:
+      operationId: getTenantInvoice
+      summary: Read a fiscal invoice by id
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "404":
+          description: Invoice not found in tenant
+  /api/tenants/{tenantId}/invoices/{invoiceId}/status:
+    patch:
+      operationId: updateTenantInvoiceStatus
+      summary: Update the lifecycle status of a fiscal invoice
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateInvoiceStatusRequest"
+      responses:
+        "200":
+          description: Invoice status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "400":
+          description: Unsupported status
+        "403":
+          description: Current role cannot mutate tenant invoices
+        "404":
+          description: Invoice not found in tenant
 components:
   parameters:
     UserEmail:
@@ -705,6 +824,195 @@ components:
         - GROUP_COMPANY
         - ADVISORY
         - DOCUMENT_EXCHANGE
+    Invoice:
+      type: object
+      required:
+        - id
+        - tenantId
+        - issuerCompany
+        - customerCompany
+        - invoiceNumber
+        - invoiceType
+        - status
+        - issueDate
+        - currency
+        - taxableBase
+        - taxTotal
+        - total
+        - lines
+        - taxes
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        issuerCompany:
+          $ref: "#/components/schemas/Company"
+        customerCompany:
+          $ref: "#/components/schemas/Company"
+        invoiceNumber:
+          type: string
+        invoiceType:
+          $ref: "#/components/schemas/InvoiceType"
+        status:
+          $ref: "#/components/schemas/InvoiceStatus"
+        issueDate:
+          type: string
+          format: date
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        taxableBase:
+          type: number
+          format: decimal
+        taxTotal:
+          type: number
+          format: decimal
+        total:
+          type: number
+          format: decimal
+        rectifiesInvoiceId:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvoiceLine"
+        taxes:
+          type: array
+          items:
+            $ref: "#/components/schemas/InvoiceTax"
+    InvoiceLine:
+      type: object
+      required:
+        - lineNumber
+        - description
+        - quantity
+        - unitPrice
+        - taxRate
+        - lineBase
+        - taxAmount
+        - lineTotal
+      properties:
+        lineNumber:
+          type: integer
+        description:
+          type: string
+        quantity:
+          type: number
+          format: decimal
+        unitPrice:
+          type: number
+          format: decimal
+        taxRate:
+          type: number
+          format: decimal
+        lineBase:
+          type: number
+          format: decimal
+        taxAmount:
+          type: number
+          format: decimal
+        lineTotal:
+          type: number
+          format: decimal
+    InvoiceTax:
+      type: object
+      required:
+        - taxRate
+        - taxableBase
+        - taxAmount
+      properties:
+        taxRate:
+          type: number
+          format: decimal
+        taxableBase:
+          type: number
+          format: decimal
+        taxAmount:
+          type: number
+          format: decimal
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - issuerCompanyId
+        - customerCompanyId
+        - invoiceNumber
+        - invoiceType
+        - lines
+      properties:
+        issuerCompanyId:
+          type: string
+          format: uuid
+        customerCompanyId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+          maxLength: 80
+        invoiceType:
+          $ref: "#/components/schemas/InvoiceType"
+        issueDate:
+          type: string
+          format: date
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        rectifiesInvoiceId:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CreateInvoiceLineRequest"
+    CreateInvoiceLineRequest:
+      type: object
+      required:
+        - description
+        - quantity
+        - unitPrice
+        - taxRate
+      properties:
+        description:
+          type: string
+          maxLength: 500
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0.0001
+        unitPrice:
+          type: number
+          format: decimal
+          minimum: 0
+        taxRate:
+          type: number
+          format: decimal
+          minimum: 0
+    UpdateInvoiceStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: "#/components/schemas/InvoiceStatus"
+    InvoiceType:
+      type: string
+      enum:
+        - ISSUED
+        - RECEIVED
+        - RECTIFYING
+    InvoiceStatus:
+      type: string
+      enum:
+        - DRAFT
+        - ISSUED
+        - RECTIFIED
+        - CANCELLED
     Document:
       type: object
       required:

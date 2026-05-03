@@ -15,6 +15,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /identidad y tenants/i })).toBeInTheDocument()
     expect(screen.getByRole('table', { name: 'Empresas del tenant' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /registrar cliente o proveedor/i })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Facturacion fiscal' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Centro documental' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /subir documento/i })).toBeInTheDocument()
   })
@@ -101,18 +102,51 @@ describe('App', () => {
                         latestFilename: 'factura.txt',
                         updatedAt: '2026-05-03T15:00:00Z',
                       },
+                  ]
+                : url.endsWith('/invoices')
+                  ? [
+                      {
+                        id: '70000000-0000-0000-0000-000000000001',
+                        tenantId: '10000000-0000-0000-0000-000000000001',
+                        issuerCompany: {
+                          id: '40000000-0000-0000-0000-000000000001',
+                          tenantId: '10000000-0000-0000-0000-000000000001',
+                          legalName: 'Norte Asesores SL',
+                          taxId: 'B12345678',
+                          countryCode: 'ES',
+                          relationshipType: 'OWNER',
+                          status: 'ACTIVE',
+                        },
+                        customerCompany: {
+                          id: '40000000-0000-0000-0000-000000000002',
+                          tenantId: '10000000-0000-0000-0000-000000000001',
+                          legalName: 'Alba Retail Group SL',
+                          taxId: 'B87654321',
+                          countryCode: 'ES',
+                          relationshipType: 'CLIENT',
+                          status: 'ACTIVE',
+                        },
+                        invoiceNumber: 'F2026-0001',
+                        invoiceType: 'ISSUED',
+                        status: 'DRAFT',
+                        issueDate: '2026-05-03',
+                        currency: 'EUR',
+                        taxableBase: 250,
+                        taxTotal: 47,
+                        total: 297,
+                      },
                     ]
-                : [
-                  {
-                    id: '40000000-0000-0000-0000-000000000001',
-                    tenantId: '10000000-0000-0000-0000-000000000001',
-                    legalName: 'Norte Asesores SL',
-                    taxId: 'B12345678',
-                    countryCode: 'ES',
-                    relationshipType: 'OWNER',
-                    status: 'ACTIVE',
-                  },
-                ]
+                  : [
+                      {
+                        id: '40000000-0000-0000-0000-000000000001',
+                        tenantId: '10000000-0000-0000-0000-000000000001',
+                        legalName: 'Norte Asesores SL',
+                        taxId: 'B12345678',
+                        countryCode: 'ES',
+                        relationshipType: 'OWNER',
+                        status: 'ACTIVE',
+                      },
+                    ]
 
         return Promise.resolve({
           ok: true,
@@ -128,5 +162,6 @@ describe('App', () => {
     await waitFor(() => expect(screen.getAllByText('Norte Asesores SL').length).toBeGreaterThan(0))
     expect(screen.getByText('Gestion cliente')).toBeInTheDocument()
     expect(screen.getByText('Factura recibida demo')).toBeInTheDocument()
+    expect(screen.getByText('F2026-0001')).toBeInTheDocument()
   })
 })
