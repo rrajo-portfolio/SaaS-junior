@@ -23,4 +23,9 @@ if ($LASTEXITCODE -ne 0) {
 
 Assert-HttpOk "$BaseUrl/healthz"
 Assert-HttpOk "$BaseUrl/api/health"
+Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/me" -Headers @{ "X-User-Email" = "ana.admin@fiscalsaas.local" } -TimeoutSec 15 | Out-Null
+Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/companies" -Headers @{
+  "X-User-Email" = "ana.admin@fiscalsaas.local"
+  "X-Tenant-Id" = "10000000-0000-0000-0000-000000000001"
+} -TimeoutSec 15 | Out-Null
 Assert-HttpOk "$BaseUrl/"

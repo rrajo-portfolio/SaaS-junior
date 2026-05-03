@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:preprod": "playwright test --config playwright.preprod.config.ts"
   },
   "dependencies": {
     "lucide-react": "^1.14.0",

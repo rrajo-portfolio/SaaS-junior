@@ -183,6 +183,71 @@ h2 {
   margin-bottom: 18px;
 }
 
+.identity-band {
+  display: grid;
+  grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: stretch;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.identity-band h2 {
+  margin-bottom: 6px;
+}
+
+.identity-band span {
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+.tenant-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.tenant-switcher button {
+  min-height: 66px;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 3px 8px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tenant-switcher button.selected {
+  border-color: var(--color-primary);
+  background: #eef4ff;
+}
+
+.tenant-switcher button svg {
+  grid-row: span 2;
+  color: var(--color-primary);
+}
+
+.tenant-switcher button span {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.tenant-switcher button small {
+  color: var(--color-text-muted);
+}
+
+.identity-warning {
+  margin-bottom: 18px;
+}
+
 .service-state,
 .metric-card,
 .panel {
@@ -381,6 +446,10 @@ h2 {
   .content-grid {
     grid-template-columns: 1fr;
   }
+
+  .identity-band {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -416,7 +485,8 @@ h2 {
   }
 
   .status-strip,
-  .metrics-grid {
+  .metrics-grid,
+  .tenant-switcher {
     grid-template-columns: 1fr;
   }
 

@@ -4,6 +4,6 @@ test('loads the fiscal operations dashboard', async ({ page }) => {
   await page.goto('/')
 
   await expect(page).toHaveTitle(/Fiscal SaaS/)
-  await expect(page.getByRole('heading', { name: 'Operaciones documentales' })).toBeVisible()
-  await expect(page.getByRole('table', { name: 'Documentos recientes' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Identidad y tenants' })).toBeVisible()
+  await expect(page.getByRole('table', { name: 'Empresas del tenant' })).toBeVisible()
 })

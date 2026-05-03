@@ -7,10 +7,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -19,17 +24,32 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfiguration {
 
 	@Bean
-	SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
+	SecurityFilterChain apiSecurity(HttpSecurity http, HeaderAuthenticationFilter headerAuthenticationFilter) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
 				.cors(Customizer.withDefaults())
+				.exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(unauthorizedEntryPoint()))
 				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers(HttpMethod.OPTIONS, "/api/**")
+						.permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/health", "/actuator/health", "/actuator/health/**")
 						.permitAll()
 						.anyRequest()
 						.authenticated())
-				.httpBasic(Customizer.withDefaults())
+				.addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 				.build();
+	}
+
+	@Bean
+	AuthenticationEntryPoint unauthorizedEntryPoint() {
+		return (request, response, authException) -> response.sendError(HttpStatus.UNAUTHORIZED.value());
+	}
+
+	@Bean
+	UserDetailsService noDefaultPasswordUserDetailsService() {
+		return username -> {
+			throw new UsernameNotFoundException("Password-based login is disabled for this phase.");
+		};
 	}
 
 	@Bean
@@ -42,7 +62,7 @@ public class SecurityConfiguration {
 				.toList();
 		configuration.setAllowedOrigins(origins);
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Id"));
+		configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Id", "X-User-Email"));
 		configuration.setExposedHeaders(List.of("Location"));
 		configuration.setAllowCredentials(false);
 

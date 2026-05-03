@@ -28,4 +28,179 @@ paths:
                   checkedAt:
                     type: string
                     format: date-time
-
+  /api/me:
+    get:
+      operationId: getCurrentUser
+      summary: Current authenticated user and memberships
+      parameters:
+        - $ref: "#/components/parameters/UserEmail"
+      responses:
+        "200":
+          description: Current user context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MeResponse"
+        "401":
+          description: Missing or invalid identity header
+  /api/tenants:
+    get:
+      operationId: listCurrentUserTenants
+      summary: Tenants available to the current user
+      parameters:
+        - $ref: "#/components/parameters/UserEmail"
+      responses:
+        "200":
+          description: Tenant memberships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Tenant"
+        "401":
+          description: Missing or invalid identity header
+  /api/tenants/{tenantId}/companies:
+    get:
+      operationId: listTenantCompanies
+      summary: Companies scoped to a tenant membership
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant companies
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Company"
+        "401":
+          description: Missing or invalid identity header
+        "403":
+          description: User is not a member of the requested tenant
+components:
+  parameters:
+    UserEmail:
+      name: X-User-Email
+      in: header
+      required: true
+      schema:
+        type: string
+        format: email
+    TenantId:
+      name: X-Tenant-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    MeResponse:
+      type: object
+      required:
+        - user
+        - memberships
+      properties:
+        user:
+          type: object
+          required:
+            - id
+            - email
+            - displayName
+            - roles
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+            displayName:
+              type: string
+            roles:
+              type: array
+              items:
+                $ref: "#/components/schemas/Role"
+        memberships:
+          type: array
+          items:
+            $ref: "#/components/schemas/Membership"
+    Membership:
+      type: object
+      required:
+        - tenantId
+        - tenantSlug
+        - tenantName
+        - role
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        tenantSlug:
+          type: string
+        tenantName:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+    Tenant:
+      type: object
+      required:
+        - id
+        - slug
+        - name
+        - role
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+    Company:
+      type: object
+      required:
+        - id
+        - tenantId
+        - legalName
+        - taxId
+        - countryCode
+        - relationshipType
+        - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        legalName:
+          type: string
+        taxId:
+          type: string
+        countryCode:
+          type: string
+        relationshipType:
+          type: string
+        status:
+          type: string
+    Role:
+      type: string
+      enum:
+        - platform_admin
+        - tenant_admin
+        - fiscal_manager
+        - accountant
+        - client_user
+        - auditor
+        - readonly
