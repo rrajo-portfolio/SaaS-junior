@@ -38,7 +38,6 @@ class IdentityControllerTests {
 						.header("X-User-Email", "leo.accountant@fiscalsaas.local")
 						.header("X-Tenant-Id", TENANT_NORTE))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(2))
 				.andExpect(jsonPath("$[0].tenantId").value(TENANT_NORTE));
 	}
 

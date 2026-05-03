@@ -1,6 +1,7 @@
 package com.fiscalsaas.backend.identity;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,6 +42,31 @@ public class Company {
 	private Instant createdAt;
 
 	protected Company() {
+	}
+
+	public static Company create(Tenant tenant, String legalName, String taxId, String countryCode, String relationshipType) {
+		Company company = new Company();
+		company.id = UUID.randomUUID().toString();
+		company.tenant = tenant;
+		company.legalName = legalName.trim();
+		company.taxId = taxId.trim().toUpperCase();
+		company.countryCode = countryCode.trim().toUpperCase();
+		company.relationshipType = relationshipType.trim().toUpperCase();
+		company.status = "ACTIVE";
+		company.createdAt = Instant.now();
+		return company;
+	}
+
+	public void update(String legalName, String taxId, String countryCode, String relationshipType, String status) {
+		this.legalName = legalName.trim();
+		this.taxId = taxId.trim().toUpperCase();
+		this.countryCode = countryCode.trim().toUpperCase();
+		this.relationshipType = relationshipType.trim().toUpperCase();
+		this.status = status.trim().toUpperCase();
+	}
+
+	public void deactivate() {
+		this.status = "INACTIVE";
 	}
 
 	public String id() {

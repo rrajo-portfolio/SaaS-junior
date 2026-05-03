@@ -2,17 +2,12 @@ package com.fiscalsaas.backend.api;
 
 import java.util.List;
 
-import com.fiscalsaas.backend.identity.Company;
-import com.fiscalsaas.backend.identity.CompanyRepository;
 import com.fiscalsaas.backend.identity.FiscalRole;
 import com.fiscalsaas.backend.identity.Membership;
 import com.fiscalsaas.backend.identity.TenantAccessService;
 import com.fiscalsaas.backend.security.CurrentUser;
 
-import jakarta.servlet.http.HttpServletRequest;
-
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,11 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class IdentityController {
 
 	private final TenantAccessService tenantAccess;
-	private final CompanyRepository companies;
 
-	IdentityController(TenantAccessService tenantAccess, CompanyRepository companies) {
+	IdentityController(TenantAccessService tenantAccess) {
 		this.tenantAccess = tenantAccess;
-		this.companies = companies;
 	}
 
 	@GetMapping("/me")
@@ -50,15 +43,6 @@ public class IdentityController {
 				.toList();
 	}
 
-	@GetMapping("/tenants/{tenantId}/companies")
-	List<CompanyResponse> companies(@PathVariable String tenantId, HttpServletRequest request) {
-		tenantAccess.requireTenantAccess(tenantId, request);
-		return companies.findByTenantIdOrderByLegalNameAsc(tenantId)
-				.stream()
-				.map(CompanyResponse::from)
-				.toList();
-	}
-
 	record MeResponse(UserResponse user, List<MembershipResponse> memberships) {
 	}
 
@@ -76,25 +60,5 @@ public class IdentityController {
 	}
 
 	record TenantResponse(String id, String slug, String name, FiscalRole role) {
-	}
-
-	record CompanyResponse(
-			String id,
-			String tenantId,
-			String legalName,
-			String taxId,
-			String countryCode,
-			String relationshipType,
-			String status) {
-		static CompanyResponse from(Company company) {
-			return new CompanyResponse(
-					company.id(),
-					company.tenantId(),
-					company.legalName(),
-					company.taxId(),
-					company.countryCode(),
-					company.relationshipType(),
-					company.status());
-		}
 	}
 }
