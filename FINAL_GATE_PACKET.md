@@ -13,7 +13,7 @@ The repository contains the product and reproducible local/preproduction infrast
 | Evidence | Result |
 |---|---|
 | Tooling verified | Docker, Compose, kubectl, Helm, kind, Java, Node, npm and git available. `gh` CLI not installed. |
-| Jenkins | Controller starts, generated job exists, Docker access works, pipeline build #8 passed. |
+| Jenkins | Controller starts, generated job tracks `*/main`, Docker access works, build #9 passed and parameterized build #10 passed with preprod Playwright against main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3`. |
 | Kubernetes | kind node Ready, all preprod pods Running, smoke checks passed. |
 | Frontend | Unit tests, build, local Playwright and preprod Playwright passed. |
 | Backend | Full Maven verify passed with H2 and MySQL Testcontainers. |
