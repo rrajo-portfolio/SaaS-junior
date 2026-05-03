@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: Fiscal SaaS API
+  version: 0.1.0
+paths:
+  /api/health:
+    get:
+      operationId: getApiHealth
+      summary: Backend health check
+      responses:
+        "200":
+          description: Backend is reachable
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                  - service
+                  - checkedAt
+                properties:
+                  status:
+                    type: string
+                    enum:
+                      - ok
+                  service:
+                    type: string
+                  checkedAt:
+                    type: string
+                    format: date-time
+
