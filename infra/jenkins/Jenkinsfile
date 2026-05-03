@@ -29,7 +29,7 @@ pipeline {
             -v fiscal-saas-maven-cache:/root/.m2 \
             -w "$PWD/backend" \
             maven:3.9.9-eclipse-temurin-21 \
-            ./mvnw -B -DskipTests=false verify
+            sh ./mvnw -B -DskipTests=false verify
         '''
       }
       post {
