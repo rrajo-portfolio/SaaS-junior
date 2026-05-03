@@ -10,7 +10,7 @@ RUN ./mvnw -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN adduser --system --group app && apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+RUN adduser --system --group app && apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/* && mkdir -p /app/storage/documents && chown -R app:app /app/storage
 COPY --from=build /workspace/backend/target/backend-*.jar /app/service.jar
 USER app
 EXPOSE 8080

@@ -74,11 +74,31 @@ type BusinessRelationship = {
   startsAt: string
 }
 
+type DocumentSummary = {
+  id: string
+  tenantId: string
+  company: CompanySummary
+  documentType: string
+  title: string
+  status: string
+  currentVersion: number
+  latestSha256: string
+  latestByteSize: number
+  latestFilename: string
+  updatedAt: string
+}
+
 type CompanyFormState = {
   legalName: string
   taxId: string
   countryCode: string
   relationshipType: string
+}
+
+type DocumentFormState = {
+  companyId: string
+  documentType: string
+  title: string
 }
 
 type HealthState =
@@ -93,6 +113,11 @@ const initialCompanyForm: CompanyFormState = {
   taxId: '',
   countryCode: 'ES',
   relationshipType: 'CLIENT',
+}
+const initialDocumentForm: DocumentFormState = {
+  companyId: '',
+  documentType: 'INVOICE_RECEIVED',
+  title: '',
 }
 
 const fiscalStatus = [
@@ -131,10 +156,15 @@ function App() {
   const [activeTenantId, setActiveTenantId] = useState<string>('')
   const [companies, setCompanies] = useState<CompanySummary[]>([])
   const [relationships, setRelationships] = useState<BusinessRelationship[]>([])
+  const [documents, setDocuments] = useState<DocumentSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
+  const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
+  const [documentFile, setDocumentFile] = useState<File | null>(null)
   const [isSubmittingCompany, setIsSubmittingCompany] = useState(false)
+  const [isUploadingDocument, setIsUploadingDocument] = useState(false)
   const [identityError, setIdentityError] = useState<string | null>(null)
   const [companyMutationMessage, setCompanyMutationMessage] = useState<string | null>(null)
+  const [documentMutationMessage, setDocumentMutationMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -195,15 +225,21 @@ function App() {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
       }),
+      fetch(apiUrl(`/tenants/${activeTenantId}/documents`), {
+        headers: authHeaders(activeTenantId),
+        signal: controller.signal,
+      }),
     ])
-      .then(async ([companiesResponse, relationshipsResponse]) => {
-        if (!companiesResponse.ok || !relationshipsResponse.ok) {
+      .then(async ([companiesResponse, relationshipsResponse, documentsResponse]) => {
+        if (!companiesResponse.ok || !relationshipsResponse.ok || !documentsResponse.ok) {
           throw new Error('Company scope failed')
         }
         const tenantCompanies = (await companiesResponse.json()) as CompanySummary[]
         const tenantRelationships = (await relationshipsResponse.json()) as BusinessRelationship[]
+        const tenantDocuments = (await documentsResponse.json()) as DocumentSummary[]
         setCompanies(tenantCompanies)
         setRelationships(tenantRelationships)
+        setDocuments(tenantDocuments)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -246,6 +282,48 @@ function App() {
     }
   }
 
+  async function uploadDocument(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!activeTenantId || !documentFile || isUploadingDocument) {
+      setDocumentMutationMessage('Selecciona un archivo fiscal')
+      return
+    }
+
+    const companyId = documentForm.companyId || companies[0]?.id
+    if (!companyId) {
+      setDocumentMutationMessage('Selecciona una empresa')
+      return
+    }
+
+    setIsUploadingDocument(true)
+    setDocumentMutationMessage(null)
+    const formData = new FormData()
+    formData.set('companyId', companyId)
+    formData.set('documentType', documentForm.documentType)
+    formData.set('title', documentForm.title || documentFile.name)
+    formData.set('file', documentFile)
+
+    try {
+      const response = await fetch(apiUrl(`/tenants/${activeTenantId}/documents`), {
+        method: 'POST',
+        headers: authHeaders(activeTenantId),
+        body: formData,
+      })
+      if (!response.ok) {
+        throw new Error('Document upload failed')
+      }
+      const createdDocument = (await response.json()) as DocumentSummary
+      setDocuments((current) => [createdDocument, ...current])
+      setDocumentForm((current) => ({ ...initialDocumentForm, companyId: current.companyId }))
+      setDocumentFile(null)
+      setDocumentMutationMessage('Documento registrado')
+    } catch {
+      setDocumentMutationMessage('No se pudo registrar el documento')
+    } finally {
+      setIsUploadingDocument(false)
+    }
+  }
+
   const activeTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === activeTenantId) ?? tenants[0],
     [activeTenantId, tenants],
@@ -256,9 +334,9 @@ function App() {
       { label: 'Tenants asignados', value: tenants.length.toString(), trend: me?.user.displayName ?? demoUserEmail, icon: Users },
       { label: 'Empresas visibles', value: companies.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Building2 },
       { label: 'Relaciones B2B', value: relationships.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Handshake },
-      { label: 'Eventos auditados', value: '7.418', trend: 'append-only', icon: FileClock },
+      { label: 'Documentos', value: documents.length.toString(), trend: 'SHA-256', icon: FileClock },
     ],
-    [activeTenant, companies.length, me, relationships.length, tenants.length],
+    [activeTenant, companies.length, documents.length, me, relationships.length, tenants.length],
   )
 
   const healthDetail = useMemo(() => {
@@ -267,6 +345,8 @@ function App() {
     }
     return health.payload.service
   }, [health])
+
+  const selectedDocumentCompanyId = documentForm.companyId || companies[0]?.id || ''
 
   return (
     <div className="app-shell">
@@ -531,6 +611,86 @@ function App() {
             </div>
           </aside>
         </section>
+
+        <section className="panel document-panel" id="documents" aria-label="Centro documental">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Documentos</p>
+              <h2>Centro documental</h2>
+            </div>
+            <FileCheck2 size={20} />
+          </div>
+
+          <form className="document-upload" onSubmit={uploadDocument}>
+            <label>
+              <span>Empresa</span>
+              <select
+                aria-label="Empresa documental"
+                onChange={(event) => setDocumentForm((current) => ({ ...current, companyId: event.target.value }))}
+                value={selectedDocumentCompanyId}
+              >
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.legalName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Tipo</span>
+              <select
+                aria-label="Tipo documental"
+                onChange={(event) => setDocumentForm((current) => ({ ...current, documentType: event.target.value }))}
+                value={documentForm.documentType}
+              >
+                <option value="INVOICE_RECEIVED">Factura recibida</option>
+                <option value="INVOICE_ISSUED">Factura emitida</option>
+                <option value="CONTRACT">Contrato</option>
+                <option value="CERTIFICATE">Certificado</option>
+                <option value="TAX_REPORT">Informe fiscal</option>
+                <option value="EVIDENCE">Evidencia</option>
+                <option value="OTHER">Otro</option>
+              </select>
+            </label>
+            <label>
+              <span>Titulo</span>
+              <input
+                aria-label="Titulo documental"
+                onChange={(event) => setDocumentForm((current) => ({ ...current, title: event.target.value }))}
+                placeholder="Documento fiscal"
+                value={documentForm.title}
+              />
+            </label>
+            <label>
+              <span>Archivo</span>
+              <input aria-label="Archivo fiscal" onChange={(event) => setDocumentFile(event.target.files?.[0] ?? null)} type="file" />
+            </label>
+            <button className="primary-button compact" disabled={isUploadingDocument} type="submit">
+              <UploadCloud size={16} />
+              {isUploadingDocument ? 'Subiendo' : 'Subir'}
+            </button>
+          </form>
+          {documentMutationMessage ? <p className="form-message">{documentMutationMessage}</p> : null}
+
+          <div className="document-list">
+            {documents.length === 0 ? (
+              <div className="empty-state">Sin documentos en el tenant activo</div>
+            ) : (
+              documents.map((document) => (
+                <article className="document-row" key={document.id}>
+                  <div>
+                    <strong>{document.title}</strong>
+                    <span>{document.company.legalName}</span>
+                  </div>
+                  <span>{formatDocumentType(document.documentType)}</span>
+                  <span>v{document.currentVersion}</span>
+                  <small>{formatBytes(document.latestByteSize)}</small>
+                  <code>{document.latestSha256.slice(0, 12)}</code>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
       </main>
     </div>
   )
@@ -575,6 +735,26 @@ function formatRelationshipKind(value: string) {
 
 function formatStatus(value: string) {
   return value === 'ACTIVE' ? 'Activo' : value
+}
+
+function formatDocumentType(value: string) {
+  const labels: Record<string, string> = {
+    INVOICE_ISSUED: 'Factura emitida',
+    INVOICE_RECEIVED: 'Factura recibida',
+    CONTRACT: 'Contrato',
+    CERTIFICATE: 'Certificado',
+    TAX_REPORT: 'Informe fiscal',
+    EVIDENCE: 'Evidencia',
+    OTHER: 'Otro',
+  }
+  return labels[value] ?? value
+}
+
+function formatBytes(value: number) {
+  if (value < 1024) {
+    return `${value} B`
+  }
+  return `${(value / 1024).toFixed(1)} KB`
 }
 
 export default App

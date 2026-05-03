@@ -16,6 +16,29 @@ function Assert-HttpOk {
   }
 }
 
+function Assert-AuthenticatedHttpOk {
+  param(
+    [string]$Url,
+    [hashtable]$Headers
+  )
+
+  $lastError = $null
+  foreach ($attempt in 1..6) {
+    try {
+      $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -Headers $Headers -TimeoutSec 15
+      if ($response.StatusCode -eq 200) {
+        return
+      }
+      $lastError = "$Url returned HTTP $($response.StatusCode)"
+    } catch {
+      $lastError = $_.Exception.Message
+    }
+    Start-Sleep -Seconds 2
+  }
+
+  throw "Authenticated smoke check failed for $Url. Last error: $lastError"
+}
+
 kubectl -n $Namespace get pods
 if ($LASTEXITCODE -ne 0) {
   throw "Unable to read Kubernetes pods."
@@ -23,13 +46,13 @@ if ($LASTEXITCODE -ne 0) {
 
 Assert-HttpOk "$BaseUrl/healthz"
 Assert-HttpOk "$BaseUrl/api/health"
-Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/me" -Headers @{ "X-User-Email" = "ana.admin@fiscalsaas.local" } -TimeoutSec 15 | Out-Null
-Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/companies" -Headers @{
+$userHeaders = @{ "X-User-Email" = "ana.admin@fiscalsaas.local" }
+$tenantHeaders = @{
   "X-User-Email" = "ana.admin@fiscalsaas.local"
   "X-Tenant-Id" = "10000000-0000-0000-0000-000000000001"
-} -TimeoutSec 15 | Out-Null
-Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/business-relationships" -Headers @{
-  "X-User-Email" = "ana.admin@fiscalsaas.local"
-  "X-Tenant-Id" = "10000000-0000-0000-0000-000000000001"
-} -TimeoutSec 15 | Out-Null
+}
+Assert-AuthenticatedHttpOk "$BaseUrl/api/me" $userHeaders
+Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/companies" $tenantHeaders
+Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/business-relationships" $tenantHeaders
+Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/documents" $tenantHeaders
 Assert-HttpOk "$BaseUrl/"

@@ -319,6 +319,164 @@ paths:
           description: Business relationship deactivated
         "404":
           description: Relationship not found in tenant
+  /api/tenants/{tenantId}/documents:
+    get:
+      operationId: listTenantDocuments
+      summary: Fiscal documents scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+    post:
+      operationId: uploadTenantDocument
+      summary: Upload a new fiscal document with version 1
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - companyId
+                - documentType
+                - file
+              properties:
+                companyId:
+                  type: string
+                  format: uuid
+                documentType:
+                  $ref: "#/components/schemas/DocumentType"
+                title:
+                  type: string
+                  maxLength: 220
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "403":
+          description: Current role cannot mutate tenant documents
+  /api/tenants/{tenantId}/documents/{documentId}/versions:
+    post:
+      operationId: uploadTenantDocumentVersion
+      summary: Upload a new immutable version of a fiscal document
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Document version uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+  /api/tenants/{tenantId}/documents/{documentId}/download:
+    get:
+      operationId: downloadTenantDocument
+      summary: Download the latest fiscal document version
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Latest document binary. Response must be no-store.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+  /api/tenants/{tenantId}/documents/{documentId}/events:
+    get:
+      operationId: listTenantDocumentEvents
+      summary: Append-only audit events for a fiscal document
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: documentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Document audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DocumentEvent"
 components:
   parameters:
     UserEmail:
@@ -547,6 +705,72 @@ components:
         - GROUP_COMPANY
         - ADVISORY
         - DOCUMENT_EXCHANGE
+    Document:
+      type: object
+      required:
+        - id
+        - tenantId
+        - company
+        - documentType
+        - title
+        - status
+        - currentVersion
+        - latestSha256
+        - latestByteSize
+        - latestFilename
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        company:
+          $ref: "#/components/schemas/Company"
+        documentType:
+          $ref: "#/components/schemas/DocumentType"
+        title:
+          type: string
+        status:
+          type: string
+        currentVersion:
+          type: integer
+        latestSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        latestByteSize:
+          type: integer
+          format: int64
+        latestFilename:
+          type: string
+        updatedAt:
+          type: string
+          format: date-time
+    DocumentEvent:
+      type: object
+      required:
+        - eventType
+        - eventAt
+      properties:
+        eventType:
+          type: string
+        eventAt:
+          type: string
+          format: date-time
+        details:
+          type: string
+    DocumentType:
+      type: string
+      enum:
+        - INVOICE_ISSUED
+        - INVOICE_RECEIVED
+        - CONTRACT
+        - CERTIFICATE
+        - TAX_REPORT
+        - EVIDENCE
+        - OTHER
     Role:
       type: string
       enum:

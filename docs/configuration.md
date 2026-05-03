@@ -19,6 +19,9 @@ No `.env` file or `.env` template is stored in this repository.
 | `VITE_API_BASE_URL` | Frontend API base URL used at build time. |
 | `VERIFACTU_MODE` | Verifactu adapter mode. Production must stay disabled until an explicit validated phase. |
 | `AEAT_PRODUCTION_ENABLED` | Guard flag for AEAT production usage. |
+| `APP_DOCUMENT_STORAGE_PATH` | Backend filesystem path for preproduction document binaries. |
+| `APP_DOCUMENT_MAX_FILE_SIZE` | Maximum accepted single document upload size. |
+| `APP_DOCUMENT_MAX_REQUEST_SIZE` | Maximum accepted multipart request size. |
 
 ## Local Setup
 
