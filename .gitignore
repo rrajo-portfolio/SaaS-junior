@@ -60,6 +60,7 @@ Thumbs.db
 logs/
 backups/
 *.sql
+!backend/src/main/resources/db/migration/*.sql
 *.sql.gz
 *.log
 tmp/
