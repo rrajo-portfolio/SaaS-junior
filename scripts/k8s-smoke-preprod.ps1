@@ -28,4 +28,8 @@ Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/tenants/10000000-0000-0000
   "X-User-Email" = "ana.admin@fiscalsaas.local"
   "X-Tenant-Id" = "10000000-0000-0000-0000-000000000001"
 } -TimeoutSec 15 | Out-Null
+Invoke-WebRequest -UseBasicParsing -Uri "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/business-relationships" -Headers @{
+  "X-User-Email" = "ana.admin@fiscalsaas.local"
+  "X-Tenant-Id" = "10000000-0000-0000-0000-000000000001"
+} -TimeoutSec 15 | Out-Null
 Assert-HttpOk "$BaseUrl/"

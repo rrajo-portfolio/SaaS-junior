@@ -86,6 +86,239 @@ paths:
           description: Missing or invalid identity header
         "403":
           description: User is not a member of the requested tenant
+    post:
+      operationId: createTenantCompany
+      summary: Create a tenant company, client or supplier
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCompanyRequest"
+      responses:
+        "201":
+          description: Company created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "400":
+          description: Validation failed
+        "403":
+          description: Current role cannot mutate tenant data
+        "409":
+          description: Company tax identifier already exists in tenant
+  /api/tenants/{tenantId}/companies/{companyId}:
+    get:
+      operationId: getTenantCompany
+      summary: Read a tenant company by id
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Company details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "404":
+          description: Company not found in tenant
+    patch:
+      operationId: updateTenantCompany
+      summary: Update a tenant company
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCompanyRequest"
+      responses:
+        "200":
+          description: Company updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Company"
+        "400":
+          description: Validation failed
+        "403":
+          description: Current role cannot mutate tenant data
+        "404":
+          description: Company not found in tenant
+        "409":
+          description: Company tax identifier already exists in tenant
+    delete:
+      operationId: deactivateTenantCompany
+      summary: Deactivate a tenant company without deleting fiscal history
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "204":
+          description: Company deactivated
+        "404":
+          description: Company not found in tenant
+  /api/tenants/{tenantId}/business-relationships:
+    get:
+      operationId: listTenantBusinessRelationships
+      summary: Business relationships scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant business relationships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BusinessRelationship"
+    post:
+      operationId: createTenantBusinessRelationship
+      summary: Create a relationship between two tenant companies
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBusinessRelationshipRequest"
+      responses:
+        "201":
+          description: Business relationship created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRelationship"
+        "400":
+          description: Validation failed
+        "403":
+          description: Current role cannot mutate tenant data
+        "404":
+          description: Company not found in tenant
+        "409":
+          description: Relationship already exists in tenant
+  /api/tenants/{tenantId}/business-relationships/{relationshipId}:
+    patch:
+      operationId: updateTenantBusinessRelationship
+      summary: Update a tenant business relationship
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: relationshipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBusinessRelationshipRequest"
+      responses:
+        "200":
+          description: Business relationship updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BusinessRelationship"
+        "404":
+          description: Relationship not found in tenant
+    delete:
+      operationId: deactivateTenantBusinessRelationship
+      summary: Deactivate a tenant business relationship
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: relationshipId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "204":
+          description: Business relationship deactivated
+        "404":
+          description: Relationship not found in tenant
 components:
   parameters:
     UserEmail:
@@ -194,6 +427,126 @@ components:
           type: string
         status:
           type: string
+    CreateCompanyRequest:
+      type: object
+      required:
+        - legalName
+        - taxId
+        - countryCode
+        - relationshipType
+      properties:
+        legalName:
+          type: string
+          maxLength: 220
+        taxId:
+          type: string
+          maxLength: 40
+          description: Basic NIF/NIE/CIF or VAT-like identifier. Real compliance is not asserted.
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+        relationshipType:
+          $ref: "#/components/schemas/CompanyRelationshipType"
+    UpdateCompanyRequest:
+      type: object
+      properties:
+        legalName:
+          type: string
+          maxLength: 220
+        taxId:
+          type: string
+          maxLength: 40
+        countryCode:
+          type: string
+          minLength: 2
+          maxLength: 2
+        relationshipType:
+          $ref: "#/components/schemas/CompanyRelationshipType"
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+    BusinessRelationship:
+      type: object
+      required:
+        - id
+        - tenantId
+        - sourceCompany
+        - targetCompany
+        - relationshipKind
+        - status
+        - startsAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        sourceCompany:
+          $ref: "#/components/schemas/Company"
+        targetCompany:
+          $ref: "#/components/schemas/Company"
+        relationshipKind:
+          $ref: "#/components/schemas/BusinessRelationshipKind"
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+        notes:
+          type: string
+          maxLength: 500
+        startsAt:
+          type: string
+          format: date
+    CreateBusinessRelationshipRequest:
+      type: object
+      required:
+        - sourceCompanyId
+        - targetCompanyId
+        - relationshipKind
+      properties:
+        sourceCompanyId:
+          type: string
+          format: uuid
+        targetCompanyId:
+          type: string
+          format: uuid
+        relationshipKind:
+          $ref: "#/components/schemas/BusinessRelationshipKind"
+        notes:
+          type: string
+          maxLength: 500
+    UpdateBusinessRelationshipRequest:
+      type: object
+      properties:
+        relationshipKind:
+          $ref: "#/components/schemas/BusinessRelationshipKind"
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - INACTIVE
+        notes:
+          type: string
+          maxLength: 500
+    CompanyRelationshipType:
+      type: string
+      enum:
+        - OWNER
+        - CLIENT
+        - SUPPLIER
+    BusinessRelationshipKind:
+      type: string
+      enum:
+        - CLIENT_MANAGEMENT
+        - SUPPLIER_PORTAL
+        - GROUP_COMPANY
+        - ADVISORY
+        - DOCUMENT_EXCHANGE
     Role:
       type: string
       enum:
