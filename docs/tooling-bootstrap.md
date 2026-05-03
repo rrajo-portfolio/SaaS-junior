@@ -16,9 +16,11 @@ docker compose version
 
 If `docker info` returns an HTTP 500 from the Docker Desktop Linux engine, restart Docker Desktop. If the error persists, run Docker Desktop repair or reinstall it, then retry the validation commands.
 
+If Docker Desktop reports `invalid character 0xEF looking for beginning of value` while reading `settings-store.json`, the settings file is not valid JSON for Docker's parser. The file must be valid JSON encoded as UTF-8 without BOM before Docker Desktop can start.
+
 ## Kubernetes Local Cluster
 
-No Kubernetes cluster is assumed. Install either kind or minikube before any Kubernetes preproduction phase.
+No Kubernetes cluster is assumed. Install and validate either kind or minikube before any Kubernetes preproduction phase.
 
 kind validation:
 
@@ -63,4 +65,3 @@ gh auth status
 ```
 
 If GitHub CLI is not installed or authenticated, use normal git remote operations and mark PR automation as blocked by local tooling or permissions.
-
