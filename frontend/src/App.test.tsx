@@ -13,6 +13,7 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: /identidad y tenants/i })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Navegacion operativa' })).toBeInTheDocument()
     expect(screen.getByRole('table', { name: 'Empresas del tenant' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /registrar cliente o proveedor/i })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Facturacion fiscal' })).toBeInTheDocument()

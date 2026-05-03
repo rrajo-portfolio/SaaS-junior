@@ -4,6 +4,7 @@ test('loads tenant data from the preproduction backend', async ({ page }) => {
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: 'Identidad y tenants' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Navegacion operativa' })).toBeVisible()
   await expect(page.getByRole('table', { name: 'Empresas del tenant' }).getByText('Cobalto Industrial SA')).toBeVisible()
   await expect(page.getByText('Portal proveedor')).toBeVisible()
   await page.getByRole('tab', { name: /Norte Asesores/ }).click()
