@@ -86,9 +86,21 @@ MYSQL_PASSWORD=${ci_secret}
 MYSQL_ROOT_PASSWORD=${ci_secret}-root
 SPRING_DATASOURCE_USERNAME=fiscal_saas_ci
 SPRING_DATASOURCE_PASSWORD=${ci_secret}
+APP_SECURITY_AUTH_MODE=demo
+SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://keycloak:8080/realms/fiscal-saas
+VITE_LOGIN_MODE=demo
+VITE_OIDC_AUTHORITY=http://localhost:18081/realms/fiscal-saas
+VITE_OIDC_CLIENT_ID=fiscal-saas-frontend
+VITE_OIDC_REDIRECT_URI=http://127.0.0.1:18080
+VITE_OIDC_POST_LOGOUT_REDIRECT_URI=http://127.0.0.1:18080
+VITE_OIDC_SCOPE=openid profile email
+KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME=ci-admin
+KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD=${ci_secret}-keycloak
 EOF
           docker compose -f infra/docker/docker-compose.local.yml config --quiet
           docker compose -f infra/docker/docker-compose.preprod.yml config --quiet
+          docker compose -f infra/keycloak/docker-compose.keycloak.yml config --quiet
+          docker compose -f infra/observability/docker-compose.observability.yml config --quiet
         '''
       }
     }
@@ -97,7 +109,7 @@ EOF
       steps {
         sh '''
           docker build -f infra/docker/backend.Dockerfile -t fiscal-saas-backend:ci .
-          docker build -f infra/docker/frontend.Dockerfile --build-arg VITE_API_BASE_URL=/api -t fiscal-saas-frontend:ci .
+          docker build -f infra/docker/frontend.Dockerfile --build-arg VITE_API_BASE_URL=/api --build-arg VITE_LOGIN_MODE=demo -t fiscal-saas-frontend:ci .
           docker build -f infra/docker/nginx.Dockerfile -t fiscal-saas-nginx:ci .
         '''
       }

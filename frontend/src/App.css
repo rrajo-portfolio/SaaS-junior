@@ -6,6 +6,30 @@
   color: var(--color-text);
 }
 
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.auth-panel {
+  width: min(420px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.auth-panel p {
+  color: var(--color-text-muted);
+}
+
 .sidebar {
   min-height: 100vh;
   padding: 24px 18px;
@@ -268,6 +292,14 @@ h3 {
   font-size: 14px;
 }
 
+.identity-band small {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .tenant-switcher {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -324,6 +356,65 @@ h3 {
   background: #eef4ff;
   color: #174ea6;
   font-weight: 800;
+}
+
+.saas-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.saas-panel {
+  min-width: 0;
+}
+
+.plan-list,
+.tenant-admin-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.plan-card,
+.tenant-admin-row {
+  min-height: 58px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.plan-card {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.plan-card div,
+.tenant-admin-row div {
+  min-width: 0;
+}
+
+.plan-card strong,
+.tenant-admin-row strong {
+  display: block;
+}
+
+.plan-card span {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.plan-card small,
+.tenant-admin-row small {
+  color: var(--color-text-muted);
+}
+
+.tenant-admin-row {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
 }
 
 .service-state,
@@ -840,6 +931,10 @@ h3 {
     grid-template-columns: 1fr;
   }
 
+  .saas-grid {
+    grid-template-columns: 1fr;
+  }
+
   .identity-band {
     grid-template-columns: 1fr;
   }
@@ -895,6 +990,7 @@ h3 {
   .status-strip,
   .module-rail,
   .metrics-grid,
+  .saas-grid,
   .tenant-switcher {
     grid-template-columns: 1fr;
   }

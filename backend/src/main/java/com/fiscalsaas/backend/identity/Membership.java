@@ -1,6 +1,7 @@
 package com.fiscalsaas.backend.identity;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -36,6 +37,17 @@ public class Membership {
 	private Instant createdAt;
 
 	protected Membership() {
+	}
+
+	public static Membership create(Tenant tenant, AppUser user, FiscalRole role) {
+		Membership membership = new Membership();
+		membership.id = UUID.randomUUID().toString();
+		membership.tenant = tenant;
+		membership.user = user;
+		membership.role = role.value();
+		membership.status = "ACTIVE";
+		membership.createdAt = Instant.now();
+		return membership;
 	}
 
 	public String id() {

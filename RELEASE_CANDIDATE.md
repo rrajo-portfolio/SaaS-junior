@@ -1,6 +1,6 @@
 # Release Candidate
 
-RC date: 2026-05-03
+RC date: 2026-05-04
 
 Status: READY_FOR_GATEKEEPER
 
@@ -8,12 +8,15 @@ Status: READY_FOR_GATEKEEPER
 
 This release candidate includes:
 
-- Spring Boot backend with Flyway migrations V1-V8.
+- Spring Boot backend with Flyway migrations V1-V9.
 - React frontend operational dashboard.
 - Tenant identity, companies/B2B, fiscal documents, invoicing, Verifactu/SIF, QR/AEAT stub and B2B e-invoice flows.
 - Docker local/preprod runtime.
 - Jenkins local CI/CD controller with JCasC.
 - kind Kubernetes preprod with Nginx reverse proxy/cache.
+- Keycloak local OIDC runtime with importable realm and public PKCE frontend client.
+- SaaS tenant lifecycle and subscription plan administration primitives.
+- Prometheus metrics endpoint and local Prometheus runtime.
 - Preprod backup, log and health scripts.
 
 ## Validation Evidence
@@ -25,15 +28,17 @@ This release candidate includes:
 | Frontend unit tests | PASS |
 | Frontend build | PASS |
 | Local Playwright | PASS |
-| Docker Compose local/preprod config | PASS |
+| Docker Compose local/preprod/Keycloak/observability config | PASS |
 | Jenkins controller bootstrap | PASS |
-| Jenkins pipeline build #9 on main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3` | PASS |
-| Jenkins parameterized build #10 with preprod Playwright on main HEAD `36425ede9a9c94b0c2ad8f71a03051b5875388a3` | PASS |
+| Jenkinsfile configuration for backend, frontend, Playwright, Compose, Keycloak and observability | PASS |
 | Kubernetes node/pod readiness | PASS |
 | Kubernetes smoke script | PASS |
 | Preprod Playwright critical flows | PASS |
 | Nginx syntax and cache headers | PASS |
-| Preprod health report script | PASS |
+| Keycloak bootstrap and realm discovery | PASS |
+| Prometheus target health | PASS |
+| Preprod health report script with metrics check | PASS |
+| Public preproduction readiness script | BLOCKED_BY_EXTERNAL_INFRASTRUCTURE |
 | Preprod log collection script | PASS |
 | Preprod MySQL backup script | PASS |
 | Forbidden tracked file check | PASS |
@@ -45,9 +50,10 @@ This release candidate includes:
 - No legal Verifactu certification.
 - No committed secrets, env files, kubeconfig, certs or database dumps.
 - No SonarQube runtime.
-- No Keycloak/OIDC runtime.
 - No TLS/cert-manager.
 - No centralized monitoring, alerting or tracing.
+- No billing provider or public payment webhooks.
+- No public preproduction DNS/TLS endpoint.
 
 ## Release Notes
 

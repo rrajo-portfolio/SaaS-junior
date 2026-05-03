@@ -1,8 +1,8 @@
 # Security Review
 
-Review date: 2026-05-03
+Review date: 2026-05-04
 
-Scope: preproduction release candidate for the Fiscal SaaS repository, including backend, frontend, Docker, Jenkins, Kubernetes, Nginx, storage, fiscal evidence, e-invoice and local operational scripts.
+Scope: preproduction release candidate for the Fiscal SaaS repository, including backend, frontend, Docker, Jenkins, Kubernetes, Nginx, Keycloak/OIDC local runtime, storage, fiscal evidence, e-invoice, observability foundation and local operational scripts.
 
 ## Result
 
@@ -15,7 +15,7 @@ No repository-tracked secrets, environment files, private keys, kubeconfigs, cer
 | Area | Status | Evidence |
 |---|---|---|
 | Secrets | PASS | `.gitignore` blocks `.env`, `.env.*`, secret material, dumps, logs and backups. Runtime values are injected from local env, Jenkins runtime env or Kubernetes Secret. |
-| Authentication boundary | PARTIAL | Local preprod uses header-based demo auth (`X-User-Email`, `X-Tenant-Id`). Keycloak/OIDC is documented as future production hardening and is not represented as completed production auth. |
+| Authentication boundary | PREPROD_FOUNDATION | Backend supports explicit `demo` and `oidc` modes. OIDC mode requires bearer JWTs from Keycloak and maps the JWT `email` claim to an active application user. Demo headers remain local/test only. |
 | Tenant isolation | PASS | Tenant-scoped endpoints require path tenant and `X-Tenant-Id` match; repositories query by tenant id. |
 | Authorization | PASS | Write paths are limited to platform/tenant/fiscal/accountant roles depending on module. Readonly/auditor roles are constrained by service checks. |
 | Document storage | PASS | Files are tenant scoped, checksummed with SHA-256 and stored outside git. Nginx disables cache for private document APIs. |
@@ -26,12 +26,12 @@ No repository-tracked secrets, environment files, private keys, kubeconfigs, cer
 | Jenkins | PASS | JCasC controller, generated job and Jenkinsfile validated with a successful Jenkins build. Docker socket use is local-only and documented as high risk. |
 | Backups | PASS | `scripts/backup-mysql-preprod.ps1` creates local ignored MySQL dumps with `mysqldump --no-tablespaces`. |
 | Logs | PASS | `scripts/collect-preprod-logs.ps1` collects local ignored pod logs. |
-| Monitoring | PARTIAL | Actuator health, Kubernetes probes and `scripts/preprod-health-report.ps1` are present. Metrics, alerting and tracing are not implemented. |
+| Monitoring | PREPROD_FOUNDATION | Actuator health, Prometheus metrics, Kubernetes probes, local Prometheus compose and `scripts/preprod-health-report.ps1` are present. Alerting and tracing are not implemented. |
 
 ## Residual Risks
 
 - This release candidate is not a legal Verifactu certification.
 - AEAT production transmission remains disabled by default.
-- Header-based demo auth is suitable only for local/preproduction validation.
+- Header-based demo auth is suitable only for local/preproduction validation; public preproduction must run with OIDC enforced.
 - TLS, cert-manager, external ingress controller, centralized monitoring, alerting and off-host backups are not completed.
 - Jenkins mounts the Docker socket and must remain local-only unless redesigned with isolated agents.

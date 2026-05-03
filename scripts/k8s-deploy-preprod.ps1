@@ -81,8 +81,37 @@ if (-not $envValues.ContainsKey("SPRING_DATASOURCE_PASSWORD") -or [string]::IsNu
   $envValues["SPRING_DATASOURCE_PASSWORD"] = $envValues["MYSQL_PASSWORD"]
 }
 
+function Get-EnvValueOrDefault {
+  param(
+    [hashtable]$Values,
+    [string]$Name,
+    [string]$Default
+  )
+
+  if ($Values.ContainsKey($Name) -and -not [string]::IsNullOrWhiteSpace($Values[$Name])) {
+    return $Values[$Name]
+  }
+
+  return $Default
+}
+
 Invoke-Checked docker @("build", "-f", (Join-Path $repoRoot "infra\docker\backend.Dockerfile"), "-t", "fiscal-saas-backend:preprod", $repoRoot)
-Invoke-Checked docker @("build", "-f", (Join-Path $repoRoot "infra\docker\frontend.Dockerfile"), "-t", "fiscal-saas-frontend:preprod", "--build-arg", "VITE_API_BASE_URL=/api", $repoRoot)
+
+$frontendLoginMode = Get-EnvValueOrDefault $envValues "VITE_LOGIN_MODE" (Get-EnvValueOrDefault $envValues "VITE_AUTH_MODE" "demo")
+$frontendBuildArgs = @(
+  "build",
+  "-f", (Join-Path $repoRoot "infra\docker\frontend.Dockerfile"),
+  "-t", "fiscal-saas-frontend:preprod",
+  "--build-arg", "VITE_API_BASE_URL=/api",
+  "--build-arg", "VITE_LOGIN_MODE=$frontendLoginMode",
+  "--build-arg", "VITE_OIDC_AUTHORITY=$(Get-EnvValueOrDefault $envValues 'VITE_OIDC_AUTHORITY' 'http://localhost:18081/realms/fiscal-saas')",
+  "--build-arg", "VITE_OIDC_CLIENT_ID=$(Get-EnvValueOrDefault $envValues 'VITE_OIDC_CLIENT_ID' 'fiscal-saas-frontend')",
+  "--build-arg", "VITE_OIDC_REDIRECT_URI=$(Get-EnvValueOrDefault $envValues 'VITE_OIDC_REDIRECT_URI' 'http://127.0.0.1:18080')",
+  "--build-arg", "VITE_OIDC_POST_LOGOUT_REDIRECT_URI=$(Get-EnvValueOrDefault $envValues 'VITE_OIDC_POST_LOGOUT_REDIRECT_URI' 'http://127.0.0.1:18080')",
+  "--build-arg", "VITE_OIDC_SCOPE=$(Get-EnvValueOrDefault $envValues 'VITE_OIDC_SCOPE' 'openid profile email')",
+  $repoRoot
+)
+Invoke-Checked docker $frontendBuildArgs
 Invoke-Checked docker @("build", "-f", (Join-Path $repoRoot "infra\docker\nginx.Dockerfile"), "-t", "fiscal-saas-nginx:preprod", $repoRoot)
 Invoke-Checked docker @("build", "-f", (Join-Path $repoRoot "infra\docker\mysql.Dockerfile"), "-t", "fiscal-saas-mysql:preprod", $repoRoot)
 

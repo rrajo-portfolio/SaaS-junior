@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -24,20 +25,34 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfiguration {
 
 	@Bean
-	SecurityFilterChain apiSecurity(HttpSecurity http, HeaderAuthenticationFilter headerAuthenticationFilter) throws Exception {
-		return http
+	SecurityFilterChain apiSecurity(
+			HttpSecurity http,
+			HeaderAuthenticationFilter headerAuthenticationFilter,
+			JwtCurrentUserAuthenticationConverter jwtAuthenticationConverter,
+			@Value("${app.security.auth-mode:demo}") String authMode) throws Exception {
+		AuthenticationMode mode = AuthenticationMode.from(authMode);
+		http
 				.csrf(AbstractHttpConfigurer::disable)
 				.cors(Customizer.withDefaults())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.exceptionHandling(exceptionHandling -> exceptionHandling.authenticationEntryPoint(unauthorizedEntryPoint()))
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers(HttpMethod.OPTIONS, "/api/**")
 						.permitAll()
-						.requestMatchers(HttpMethod.GET, "/api/health", "/actuator/health", "/actuator/health/**")
+						.requestMatchers(HttpMethod.GET, "/api/health", "/actuator/health", "/actuator/health/**", "/actuator/prometheus")
 						.permitAll()
 						.anyRequest()
-						.authenticated())
-				.addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-				.build();
+						.authenticated());
+
+		if (mode == AuthenticationMode.OIDC) {
+			http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
+					.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+		}
+		else {
+			http.addFilterBefore(headerAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+		}
+
+		return http.build();
 	}
 
 	@Bean

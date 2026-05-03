@@ -25,16 +25,25 @@ The backend supports these role values:
 | `auditor` |
 | `readonly` |
 
-## Local Authentication
+## Authentication Modes
 
-The current phase uses database-backed development authentication headers:
+The backend supports two explicit authentication modes.
+
+| Mode | Purpose |
+|---|---|
+| `demo` | Local and automated test mode using database-backed development headers. |
+| `oidc` | Keycloak/OIDC resource-server mode using bearer JWTs. |
+
+The demo mode uses these headers:
 
 | Header | Purpose |
 |---|---|
 | `X-User-Email` | Resolves an active user. |
 | `X-Tenant-Id` | Selects the requested tenant for tenant-scoped endpoints. |
 
-No password, token or client secret is stored in the repository. Keycloak/OIDC integration remains a later infrastructure phase and must replace this development authentication before production-like environments.
+OIDC mode disables demo user headers for authentication and maps the JWT `email` claim to an active `AppUser` row. The frontend supports OIDC authorization code flow with PKCE through the public `fiscal-saas-frontend` client in the local Keycloak realm.
+
+No password, token or client secret is stored in the repository. Local Keycloak bootstrap credentials must be provided outside Git.
 
 ## Tenant Guard
 
@@ -45,3 +54,18 @@ Tenant-scoped endpoints require:
 - an active membership for the requested tenant.
 
 Cross-tenant access returns `403 tenant_access_denied`.
+
+Suspended or cancelled tenants are blocked from tenant-scoped endpoints even when the user still has an active membership.
+
+## SaaS Lifecycle
+
+Phase 14 adds platform administration primitives:
+
+| Feature | Purpose |
+|---|---|
+| Subscription plans | Defines SaaS commercial limits and feature availability. |
+| Tenant status | Tracks `ACTIVE`, `SUSPENDED` and `CANCELLED` tenants. |
+| Subscription status | Tracks `trialing`, `active`, `suspended` and `cancelled` lifecycle state. |
+| Lifecycle events | Records platform-admin actions such as tenant creation, plan changes and suspension. |
+
+Platform endpoints live under `/api/platform` and require `platform_admin` role except `/api/platform/plans`, which is available to authenticated users for plan visibility.

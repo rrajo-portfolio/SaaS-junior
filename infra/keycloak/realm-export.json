@@ -1,0 +1,50 @@
+{
+  "realm": "fiscal-saas",
+  "enabled": true,
+  "displayName": "Fiscal SaaS",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "roles": {
+    "realm": [
+      { "name": "platform_admin", "description": "Platform-wide administrator." },
+      { "name": "tenant_admin", "description": "Tenant administrator." },
+      { "name": "fiscal_manager", "description": "Fiscal operations manager." },
+      { "name": "accountant", "description": "Accountant user." },
+      { "name": "client_user", "description": "Client portal user." },
+      { "name": "auditor", "description": "Audit reviewer." },
+      { "name": "readonly", "description": "Read-only user." }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "fiscal-saas-frontend",
+      "name": "Fiscal SaaS Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*",
+        "http://localhost:18080/*",
+        "http://127.0.0.1:18080/*",
+        "http://localhost:8080/*",
+        "http://127.0.0.1:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:18080",
+        "http://127.0.0.1:18080",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      }
+    }
+  ]
+}

@@ -16,7 +16,15 @@ No `.env` file or `.env` template is stored in this repository.
 | `SPRING_DATASOURCE_USERNAME` | Backend datasource username. |
 | `SPRING_DATASOURCE_PASSWORD` | Backend datasource password. |
 | `APP_CORS_ALLOWED_ORIGINS` | Comma-separated frontend/proxy origins allowed by backend CORS. |
+| `APP_SECURITY_AUTH_MODE` | Backend authentication mode. Use `demo` for local header auth and `oidc` for Keycloak/OIDC resource-server mode. |
+| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI` | OIDC issuer URI consumed by the backend when `APP_SECURITY_AUTH_MODE` is `oidc`. |
 | `VITE_API_BASE_URL` | Frontend API base URL used at build time. |
+| `VITE_LOGIN_MODE` | Frontend authentication mode used at build time. Use `demo` or `oidc`. |
+| `VITE_OIDC_AUTHORITY` | OIDC authority URL used by the frontend. |
+| `VITE_OIDC_CLIENT_ID` | Public OIDC frontend client identifier. |
+| `VITE_OIDC_REDIRECT_URI` | Frontend redirect URI for OIDC authorization code flow with PKCE. |
+| `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` | Frontend URI used after OIDC logout. |
+| `VITE_OIDC_SCOPE` | OIDC scopes requested by the frontend. |
 | `VERIFACTU_MODE` | Verifactu adapter mode. Production must stay disabled until an explicit validated phase. |
 | `AEAT_PRODUCTION_ENABLED` | Guard flag for AEAT production usage. |
 | `APP_DOCUMENT_STORAGE_PATH` | Backend filesystem path for preproduction document binaries. |
@@ -27,6 +35,8 @@ No `.env` file or `.env` template is stored in this repository.
 | `JENKINS_REPO_URL` | Git repository URL used by Jenkins Configuration as Code. |
 | `JENKINS_REPO_BRANCH` | Git branch used by the generated Jenkins pipeline job. |
 | `JENKINS_URL` | Local URL advertised by the Jenkins controller. |
+| `KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME` | Local Keycloak bootstrap administrator username. |
+| `KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD` | Local Keycloak bootstrap administrator password. |
 
 ## Local Setup
 
