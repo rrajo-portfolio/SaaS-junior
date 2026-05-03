@@ -58,5 +58,8 @@ Thumbs.db
 
 # Runtime artifacts
 logs/
+backups/
+*.sql
+*.sql.gz
 *.log
 tmp/
