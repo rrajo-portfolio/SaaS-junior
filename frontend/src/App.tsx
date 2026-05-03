@@ -10,6 +10,7 @@ import {
   FileClock,
   FileText,
   Files,
+  Fingerprint,
   Gauge,
   Handshake,
   Landmark,
@@ -105,6 +106,21 @@ type InvoiceSummary = {
   rectifiesInvoiceId?: string
 }
 
+type SifRecordSummary = {
+  id: string
+  tenantId: string
+  invoiceId: string
+  invoiceNumber: string
+  recordType: string
+  sequenceNumber: number
+  previousHash: string
+  recordHash: string
+  canonicalPayload: string
+  systemVersion: string
+  normativeVersion: string
+  createdAt: string
+}
+
 type CompanyFormState = {
   legalName: string
   taxId: string
@@ -175,6 +191,7 @@ function App() {
   const [relationships, setRelationships] = useState<BusinessRelationship[]>([])
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
+  const [sifRecords, setSifRecords] = useState<SifRecordSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
   const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -251,19 +268,31 @@ function App() {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
       }),
+      fetch(apiUrl(`/tenants/${activeTenantId}/verifactu/records`), {
+        headers: authHeaders(activeTenantId),
+        signal: controller.signal,
+      }),
     ])
-      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse]) => {
-        if (!companiesResponse.ok || !relationshipsResponse.ok || !documentsResponse.ok || !invoicesResponse.ok) {
+      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse, sifRecordsResponse]) => {
+        if (
+          !companiesResponse.ok ||
+          !relationshipsResponse.ok ||
+          !documentsResponse.ok ||
+          !invoicesResponse.ok ||
+          !sifRecordsResponse.ok
+        ) {
           throw new Error('Company scope failed')
         }
         const tenantCompanies = (await companiesResponse.json()) as CompanySummary[]
         const tenantRelationships = (await relationshipsResponse.json()) as BusinessRelationship[]
         const tenantDocuments = (await documentsResponse.json()) as DocumentSummary[]
         const tenantInvoices = (await invoicesResponse.json()) as InvoiceSummary[]
+        const tenantSifRecords = (await sifRecordsResponse.json()) as SifRecordSummary[]
         setCompanies(tenantCompanies)
         setRelationships(tenantRelationships)
         setDocuments(tenantDocuments)
         setInvoices(tenantInvoices)
+        setSifRecords(tenantSifRecords)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -353,6 +382,7 @@ function App() {
     [activeTenantId, tenants],
   )
   const invoiceTotal = invoices.reduce((total, invoice) => total + Number(invoice.total), 0)
+  const latestSifRecord = sifRecords[0]
 
   const metricCards = useMemo(
     () => [
@@ -360,9 +390,21 @@ function App() {
       { label: 'Empresas visibles', value: companies.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Building2 },
       { label: 'Relaciones B2B', value: relationships.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Handshake },
       { label: 'Facturas', value: invoices.length.toString(), trend: formatCurrency(invoiceTotal), icon: FileText },
+      { label: 'Registros SIF', value: sifRecords.length.toString(), trend: latestSifRecord?.recordHash.slice(0, 12) ?? 'Sin cadena', icon: Fingerprint },
       { label: 'Documentos', value: documents.length.toString(), trend: 'SHA-256', icon: FileClock },
     ],
-    [activeTenant, companies.length, documents.length, invoiceTotal, invoices.length, me, relationships.length, tenants.length],
+    [
+      activeTenant,
+      companies.length,
+      documents.length,
+      invoiceTotal,
+      invoices.length,
+      latestSifRecord,
+      me,
+      relationships.length,
+      sifRecords.length,
+      tenants.length,
+    ],
   )
 
   const healthDetail = useMemo(() => {
@@ -407,6 +449,10 @@ function App() {
           <a href="#invoices">
             <FileText size={18} />
             <span>Facturas</span>
+          </a>
+          <a href="#verifactu">
+            <Fingerprint size={18} />
+            <span>Verifactu</span>
           </a>
           <a href="#security">
             <LockKeyhole size={18} />
@@ -686,6 +732,47 @@ function App() {
           </div>
         </section>
 
+        <section className="panel sif-panel" id="verifactu" aria-label="Verifactu SIF">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Verifactu</p>
+              <h2>Cadena SIF</h2>
+            </div>
+            <Fingerprint size={20} />
+          </div>
+
+          <div className="sif-summary" aria-label="Resumen SIF">
+            <div>
+              <span>Registros</span>
+              <strong>{sifRecords.length}</strong>
+            </div>
+            <div>
+              <span>Ultima secuencia</span>
+              <strong>{latestSifRecord?.sequenceNumber ?? 0}</strong>
+            </div>
+            <div>
+              <span>Ultimo hash</span>
+              <code>{latestSifRecord?.recordHash.slice(0, 16) ?? 'sin-registros'}</code>
+            </div>
+          </div>
+
+          <div className="sif-list">
+            {sifRecords.length === 0 ? (
+              <div className="empty-state">Sin registros SIF en el tenant activo</div>
+            ) : (
+              sifRecords.map((record) => (
+                <article className="sif-row" key={record.id}>
+                  <strong>{record.invoiceNumber}</strong>
+                  <StatusBadge label={formatSifRecordType(record.recordType)} />
+                  <span>#{record.sequenceNumber}</span>
+                  <code>{record.previousHash.slice(0, 10)} - {record.recordHash.slice(0, 10)}</code>
+                  <small>{record.createdAt}</small>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="panel document-panel" id="documents" aria-label="Centro documental">
           <div className="panel-heading">
             <div>
@@ -839,6 +926,14 @@ function formatInvoiceStatus(value: string) {
     ISSUED: 'Emitida',
     RECTIFIED: 'Rectificada',
     CANCELLED: 'Anulada',
+  }
+  return labels[value] ?? value
+}
+
+function formatSifRecordType(value: string) {
+  const labels: Record<string, string> = {
+    REGISTRATION: 'Alta',
+    CANCELLATION: 'Anulacion',
   }
   return labels[value] ?? value
 }
