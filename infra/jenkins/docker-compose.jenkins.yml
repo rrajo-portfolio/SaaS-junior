@@ -1,0 +1,32 @@
+name: fiscal-saas-jenkins
+
+services:
+  jenkins:
+    build:
+      context: ../..
+      dockerfile: infra/jenkins/controller/Dockerfile
+    environment:
+      CASC_JENKINS_CONFIG: /var/jenkins_home/casc_configs/jenkins.yaml
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false
+      JENKINS_ADMIN_ID: ${JENKINS_ADMIN_ID:?Set JENKINS_ADMIN_ID in your local shell or .env}
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Set JENKINS_ADMIN_PASSWORD in your local shell or .env}
+      JENKINS_REPO_URL: ${JENKINS_REPO_URL:-https://github.com/rrajo-portfolio/SaaS-junior.git}
+      JENKINS_REPO_BRANCH: ${JENKINS_REPO_BRANCH:-main}
+      JENKINS_URL: ${JENKINS_URL:-http://localhost:8085/}
+    ports:
+      - "8085:8080"
+      - "50000:50000"
+    group_add:
+      - "0"
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - ./casc/jenkins.yaml:/var/jenkins_home/casc_configs/jenkins.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/login >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  jenkins-home:
