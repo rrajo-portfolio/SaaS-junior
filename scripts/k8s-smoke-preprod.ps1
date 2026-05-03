@@ -56,6 +56,7 @@ Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-0000000
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/business-relationships" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/documents" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/invoices" $tenantHeaders
+Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/einvoices" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/verifactu/records" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/verifactu/records/verify" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/verifactu/system-declarations/drafts" $tenantHeaders

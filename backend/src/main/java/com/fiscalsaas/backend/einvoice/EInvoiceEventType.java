@@ -1,0 +1,9 @@
+package com.fiscalsaas.backend.einvoice;
+
+public enum EInvoiceEventType {
+	MESSAGE_GENERATED,
+	EXCHANGE_STATUS_CHANGED,
+	COMMERCIAL_STATUS_CHANGED,
+	PAYMENT_STATUS_CHANGED,
+	PAYLOAD_EXPORTED
+}

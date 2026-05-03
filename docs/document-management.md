@@ -35,5 +35,5 @@ The adapter is intentionally local/preprod only. S3-compatible MinIO can be wire
 - Tenant path and `X-Tenant-Id` must match.
 - Upload and version creation require a write role.
 - Downloads return `Cache-Control: no-store`.
-- Nginx already disables cache for `/api/documents`, `/api/fiscal`, `/api/verifactu` and `/api/einvoice`.
+- Nginx already disables cache for `/api/documents`, `/api/fiscal`, `/api/verifactu`, `/api/einvoice` and the tenant e-invoice routes.
 - Tests use synthetic data only.

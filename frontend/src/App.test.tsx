@@ -16,6 +16,7 @@ describe('App', () => {
     expect(screen.getByRole('table', { name: 'Empresas del tenant' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /registrar cliente o proveedor/i })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Facturacion fiscal' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Factura electronica B2B' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Verifactu SIF' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: 'Centro documental' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /subir documento/i })).toBeInTheDocument()
@@ -137,6 +138,26 @@ describe('App', () => {
                         total: 297,
                       },
                     ]
+                  : url.endsWith('/einvoices')
+                    ? [
+                        {
+                          id: '82000000-0000-0000-0000-000000000001',
+                          tenantId: '10000000-0000-0000-0000-000000000001',
+                          invoiceId: '70000000-0000-0000-0000-000000000001',
+                          invoiceNumber: 'F2026-0001',
+                          issuerLegalName: 'Norte Asesores SL',
+                          customerLegalName: 'Alba Retail Group SL',
+                          syntax: 'UBL',
+                          direction: 'OUTBOUND',
+                          exchangeStatus: 'SENT',
+                          commercialStatus: 'ACCEPTED',
+                          paymentStatus: 'PAID',
+                          payloadSha256: 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+                          statusReason: 'Aceptada',
+                          createdAt: '2026-05-03T15:00:00Z',
+                          updatedAt: '2026-05-03T15:05:00Z',
+                        },
+                      ]
                   : url.endsWith('/verifactu/records')
                     ? [
                         {
@@ -192,6 +213,8 @@ describe('App', () => {
     expect(screen.getByText('Gestion cliente')).toBeInTheDocument()
     expect(screen.getByText('Factura recibida demo')).toBeInTheDocument()
     expect(screen.getAllByText('F2026-0001').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Alba Retail Group SL').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Pagada').length).toBeGreaterThan(0)
     expect(screen.getByText('Alta')).toBeInTheDocument()
     expect(screen.getByText('abcdefabcdefabcd')).toBeInTheDocument()
   })

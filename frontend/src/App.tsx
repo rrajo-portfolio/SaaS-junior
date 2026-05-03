@@ -130,6 +130,24 @@ type SifSystemDeclarationSummary = {
   createdAt: string
 }
 
+type EInvoiceSummary = {
+  id: string
+  tenantId: string
+  invoiceId: string
+  invoiceNumber: string
+  issuerLegalName: string
+  customerLegalName: string
+  syntax: string
+  direction: string
+  exchangeStatus: string
+  commercialStatus: string
+  paymentStatus: string
+  payloadSha256: string
+  statusReason?: string
+  createdAt: string
+  updatedAt: string
+}
+
 type CompanyFormState = {
   legalName: string
   taxId: string
@@ -202,6 +220,7 @@ function App() {
   const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
   const [sifRecords, setSifRecords] = useState<SifRecordSummary[]>([])
   const [systemDeclarations, setSystemDeclarations] = useState<SifSystemDeclarationSummary[]>([])
+  const [einvoices, setEinvoices] = useState<EInvoiceSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
   const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -278,6 +297,10 @@ function App() {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
       }),
+      fetch(apiUrl(`/tenants/${activeTenantId}/einvoices`), {
+        headers: authHeaders(activeTenantId),
+        signal: controller.signal,
+      }),
       fetch(apiUrl(`/tenants/${activeTenantId}/verifactu/records`), {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
@@ -287,12 +310,22 @@ function App() {
         signal: controller.signal,
       }),
     ])
-      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse, sifRecordsResponse, declarationsResponse]) => {
+      .then(
+        async ([
+          companiesResponse,
+          relationshipsResponse,
+          documentsResponse,
+          invoicesResponse,
+          einvoicesResponse,
+          sifRecordsResponse,
+          declarationsResponse,
+        ]) => {
         if (
           !companiesResponse.ok ||
           !relationshipsResponse.ok ||
           !documentsResponse.ok ||
           !invoicesResponse.ok ||
+          !einvoicesResponse.ok ||
           !sifRecordsResponse.ok ||
           !declarationsResponse.ok
         ) {
@@ -302,12 +335,14 @@ function App() {
         const tenantRelationships = (await relationshipsResponse.json()) as BusinessRelationship[]
         const tenantDocuments = (await documentsResponse.json()) as DocumentSummary[]
         const tenantInvoices = (await invoicesResponse.json()) as InvoiceSummary[]
+        const tenantEinvoices = (await einvoicesResponse.json()) as EInvoiceSummary[]
         const tenantSifRecords = (await sifRecordsResponse.json()) as SifRecordSummary[]
         const tenantDeclarations = (await declarationsResponse.json()) as SifSystemDeclarationSummary[]
         setCompanies(tenantCompanies)
         setRelationships(tenantRelationships)
         setDocuments(tenantDocuments)
         setInvoices(tenantInvoices)
+        setEinvoices(tenantEinvoices)
         setSifRecords(tenantSifRecords)
         setSystemDeclarations(tenantDeclarations)
       })
@@ -401,6 +436,7 @@ function App() {
   const invoiceTotal = invoices.reduce((total, invoice) => total + Number(invoice.total), 0)
   const latestSifRecord = sifRecords[0]
   const latestSystemDeclaration = systemDeclarations[0]
+  const latestEInvoice = einvoices[0]
 
   const metricCards = useMemo(
     () => [
@@ -408,6 +444,7 @@ function App() {
       { label: 'Empresas visibles', value: companies.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Building2 },
       { label: 'Relaciones B2B', value: relationships.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Handshake },
       { label: 'Facturas', value: invoices.length.toString(), trend: formatCurrency(invoiceTotal), icon: FileText },
+      { label: 'E-invoices', value: einvoices.length.toString(), trend: latestEInvoice?.commercialStatus ?? 'Sin mensajes', icon: FileCheck2 },
       { label: 'Registros SIF', value: sifRecords.length.toString(), trend: latestSifRecord?.recordHash.slice(0, 12) ?? 'Sin cadena', icon: Fingerprint },
       { label: 'Documentos', value: documents.length.toString(), trend: 'SHA-256', icon: FileClock },
     ],
@@ -415,8 +452,10 @@ function App() {
       activeTenant,
       companies.length,
       documents.length,
+      einvoices.length,
       invoiceTotal,
       invoices.length,
+      latestEInvoice,
       latestSifRecord,
       me,
       relationships.length,
@@ -467,6 +506,10 @@ function App() {
           <a href="#invoices">
             <FileText size={18} />
             <span>Facturas</span>
+          </a>
+          <a href="#einvoices">
+            <FileCheck2 size={18} />
+            <span>E-invoice</span>
           </a>
           <a href="#verifactu">
             <Fingerprint size={18} />
@@ -750,6 +793,55 @@ function App() {
           </div>
         </section>
 
+        <section className="panel einvoice-panel" id="einvoices" aria-label="Factura electronica B2B">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">B2B e-invoice</p>
+              <h2>Factura electronica</h2>
+            </div>
+            <FileCheck2 size={20} />
+          </div>
+
+          <div className="einvoice-summary" aria-label="Resumen e-invoice">
+            <div>
+              <span>Mensajes</span>
+              <strong>{einvoices.length}</strong>
+            </div>
+            <div>
+              <span>Ultima sintaxis</span>
+              <strong>{formatEInvoiceSyntax(latestEInvoice?.syntax)}</strong>
+            </div>
+            <div>
+              <span>Estado comercial</span>
+              <strong>{formatEInvoiceCommercialStatus(latestEInvoice?.commercialStatus)}</strong>
+            </div>
+            <div>
+              <span>Pago</span>
+              <strong>{formatEInvoicePaymentStatus(latestEInvoice?.paymentStatus)}</strong>
+            </div>
+          </div>
+
+          <div className="einvoice-list">
+            {einvoices.length === 0 ? (
+              <div className="empty-state">Sin mensajes de factura electronica en el tenant activo</div>
+            ) : (
+              einvoices.map((message) => (
+                <article className="einvoice-row" key={message.id}>
+                  <div>
+                    <strong>{message.invoiceNumber}</strong>
+                    <span>{message.customerLegalName}</span>
+                  </div>
+                  <StatusBadge label={formatEInvoiceSyntax(message.syntax)} />
+                  <span>{formatEInvoiceExchangeStatus(message.exchangeStatus)}</span>
+                  <span>{formatEInvoiceCommercialStatus(message.commercialStatus)}</span>
+                  <span>{formatEInvoicePaymentStatus(message.paymentStatus)}</span>
+                  <code>{message.payloadSha256.slice(0, 12)}</code>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="panel sif-panel" id="verifactu" aria-label="Verifactu SIF">
           <div className="panel-heading">
             <div>
@@ -962,6 +1054,41 @@ function formatSifRecordType(value: string) {
     CANCELLATION: 'Anulacion',
   }
   return labels[value] ?? value
+}
+
+function formatEInvoiceSyntax(value?: string) {
+  const labels: Record<string, string> = {
+    UBL: 'UBL',
+    FACTURAE: 'Facturae',
+  }
+  return value ? labels[value] ?? value : 'Sin mensaje'
+}
+
+function formatEInvoiceExchangeStatus(value?: string) {
+  const labels: Record<string, string> = {
+    GENERATED: 'Generada',
+    SENT: 'Enviada',
+    RECEIVED: 'Recibida',
+  }
+  return value ? labels[value] ?? value : 'Sin intercambio'
+}
+
+function formatEInvoiceCommercialStatus(value?: string) {
+  const labels: Record<string, string> = {
+    PENDING: 'Pendiente',
+    ACCEPTED: 'Aceptada',
+    REJECTED: 'Rechazada',
+  }
+  return value ? labels[value] ?? value : 'Sin estado'
+}
+
+function formatEInvoicePaymentStatus(value?: string) {
+  const labels: Record<string, string> = {
+    UNPAID: 'Pendiente',
+    PARTIALLY_PAID: 'Pago parcial',
+    PAID: 'Pagada',
+  }
+  return value ? labels[value] ?? value : 'Sin pago'
 }
 
 function formatCurrency(value: number) {
