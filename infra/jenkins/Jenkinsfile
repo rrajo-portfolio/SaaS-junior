@@ -25,11 +25,15 @@ pipeline {
         sh '''
           docker run --rm \
             --volumes-from "$HOSTNAME" \
+            --user "$(id -u):$(id -g)" \
+            --group-add 0 \
             -v /var/run/docker.sock:/var/run/docker.sock \
-            -v fiscal-saas-maven-cache:/root/.m2 \
+            -e MAVEN_CONFIG=/tmp/.m2 \
+            -e TESTCONTAINERS_RYUK_DISABLED=true \
+            -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             -w "$PWD/backend" \
             maven:3.9.9-eclipse-temurin-21 \
-            ./mvnw -B -DskipTests=false verify
+            sh ./mvnw -B -DskipTests=false verify
         '''
       }
       post {
@@ -44,8 +48,10 @@ pipeline {
         sh '''
           docker run --rm \
             --volumes-from "$HOSTNAME" \
+            --user "$(id -u):$(id -g)" \
+            -e npm_config_cache=/tmp/npm-cache \
             -w "$PWD/frontend" \
-            node:24-alpine \
+            node:20-alpine \
             sh -lc "npm ci && npm run lint && npm run test && npm run build"
         '''
       }
@@ -56,8 +62,10 @@ pipeline {
         sh '''
           docker run --rm \
             --volumes-from "$HOSTNAME" \
+            --user "$(id -u):$(id -g)" \
+            -e npm_config_cache=/tmp/npm-cache \
             -w "$PWD/frontend" \
-            mcr.microsoft.com/playwright:v1.57.0-noble \
+            mcr.microsoft.com/playwright:v1.59.1-noble \
             sh -lc "npm ci && npm run e2e"
         '''
       }
@@ -66,6 +74,19 @@ pipeline {
     stage('Docker Compose Config') {
       steps {
         sh '''
+          cleanup_env() {
+            rm -f .env
+          }
+          trap cleanup_env EXIT
+          ci_secret="$(date +%s)-${BUILD_TAG}"
+          cat > .env <<EOF
+MYSQL_DATABASE=fiscal_saas_ci
+MYSQL_USER=fiscal_saas_ci
+MYSQL_PASSWORD=${ci_secret}
+MYSQL_ROOT_PASSWORD=${ci_secret}-root
+SPRING_DATASOURCE_USERNAME=fiscal_saas_ci
+SPRING_DATASOURCE_PASSWORD=${ci_secret}
+EOF
           docker compose -f infra/docker/docker-compose.local.yml config --quiet
           docker compose -f infra/docker/docker-compose.preprod.yml config --quiet
         '''
@@ -107,10 +128,12 @@ pipeline {
       steps {
         sh '''
           docker run --rm \
+            --volumes-from "$HOSTNAME" \
+            --user "$(id -u):$(id -g)" \
             -e PLAYWRIGHT_BASE_URL="${PREPROD_BASE_URL}" \
-            -v "$PWD/frontend:/workspace" \
-            -w /workspace \
-            mcr.microsoft.com/playwright:v1.57.0-noble \
+            -e npm_config_cache=/tmp/npm-cache \
+            -w "$PWD/frontend" \
+            mcr.microsoft.com/playwright:v1.59.1-noble \
             sh -lc "npm ci && npm run e2e:preprod"
         '''
       }

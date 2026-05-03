@@ -6,7 +6,7 @@ COPY backend/mvnw backend/pom.xml ./backend/
 COPY backend/src ./backend/src
 
 WORKDIR /workspace/backend
-RUN ./mvnw -B -DskipTests package
+RUN sh ./mvnw -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
