@@ -41,7 +41,19 @@ public class TenantAccessService {
 			throw new TenantAccessDeniedException("Tenant header does not match requested tenant.");
 		}
 		CurrentUser user = currentUser();
-		return memberships.findByTenantIdAndUserIdAndStatus(tenantId, user.id(), "ACTIVE")
+		Membership membership = memberships.findByTenantIdAndUserIdAndStatus(tenantId, user.id(), "ACTIVE")
 				.orElseThrow(() -> new TenantAccessDeniedException("User is not a member of the requested tenant."));
+		if (!"ACTIVE".equals(membership.tenant().status())) {
+			throw new TenantAccessDeniedException("Tenant is not active.");
+		}
+		return membership;
+	}
+
+	public CurrentUser requirePlatformAdmin() {
+		CurrentUser user = currentUser();
+		if (!user.hasRole(FiscalRole.PLATFORM_ADMIN)) {
+			throw new TenantAccessDeniedException("Platform administrator role is required.");
+		}
+		return user;
 	}
 }

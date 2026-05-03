@@ -23,6 +23,7 @@ import {
   UploadCloud,
   Users,
 } from 'lucide-react'
+import { UserManager, WebStorageStateStore, type User } from 'oidc-client-ts'
 import './App.css'
 
 type ApiHealth = {
@@ -53,6 +54,30 @@ type TenantSummary = {
   slug: string
   name: string
   role: string
+}
+
+type TenantAdminSummary = {
+  id: string
+  slug: string
+  displayName: string
+  status: string
+  planCode: string
+  subscriptionStatus: string
+  trialEndsAt?: string
+  suspendedAt?: string
+}
+
+type SubscriptionPlanSummary = {
+  code: string
+  displayName: string
+  status: string
+  monthlyPriceCents: number
+  currency: string
+  maxUsers: number
+  maxDocuments: number
+  maxInvoices: number
+  includesVerifactu: boolean
+  includesEinvoice: boolean
 }
 
 type CompanySummary = {
@@ -168,6 +193,19 @@ type HealthState =
 
 const apiRoot = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api').replace(/\/$/, '')
 const demoUserEmail = 'ana.admin@fiscalsaas.local'
+const authMode = String(import.meta.env.VITE_LOGIN_MODE ?? import.meta.env.VITE_AUTH_MODE ?? 'demo').toLowerCase()
+const oidcEnabled = authMode === 'oidc'
+const oidcManager = oidcEnabled
+  ? new UserManager({
+      authority: import.meta.env.VITE_OIDC_AUTHORITY ?? 'http://localhost:18081/realms/fiscal-saas',
+      client_id: import.meta.env.VITE_OIDC_CLIENT_ID ?? 'fiscal-saas-frontend',
+      redirect_uri: import.meta.env.VITE_OIDC_REDIRECT_URI ?? window.location.origin,
+      post_logout_redirect_uri: import.meta.env.VITE_OIDC_POST_LOGOUT_REDIRECT_URI ?? window.location.origin,
+      response_type: 'code',
+      scope: import.meta.env.VITE_OIDC_SCOPE ?? 'openid profile email',
+      userStore: new WebStorageStateStore({ store: window.sessionStorage }),
+    })
+  : null
 const initialCompanyForm: CompanyFormState = {
   legalName: '',
   taxId: '',
@@ -197,10 +235,10 @@ function apiUrl(path: string) {
   return `${apiRoot}${path}`
 }
 
-function authHeaders(tenantId?: string) {
-  const headers: Record<string, string> = {
-    'X-User-Email': demoUserEmail,
-  }
+function authHeaders(tenantId?: string, accessToken?: string | null) {
+  const headers: Record<string, string> = oidcEnabled && accessToken
+    ? { Authorization: `Bearer ${accessToken}` }
+    : { 'X-User-Email': demoUserEmail }
 
   if (tenantId) {
     headers['X-Tenant-Id'] = tenantId
@@ -221,6 +259,8 @@ function App() {
   const [sifRecords, setSifRecords] = useState<SifRecordSummary[]>([])
   const [systemDeclarations, setSystemDeclarations] = useState<SifSystemDeclarationSummary[]>([])
   const [einvoices, setEinvoices] = useState<EInvoiceSummary[]>([])
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlanSummary[]>([])
+  const [platformTenants, setPlatformTenants] = useState<TenantAdminSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
   const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -230,6 +270,8 @@ function App() {
   const [companyMutationMessage, setCompanyMutationMessage] = useState<string | null>(null)
   const [documentMutationMessage, setDocumentMutationMessage] = useState<string | null>(null)
   const [isTenantDataLoading, setIsTenantDataLoading] = useState(false)
+  const [oidcUser, setOidcUser] = useState<User | null>(null)
+  const accessToken = oidcUser?.access_token ?? null
 
   useEffect(() => {
     const controller = new AbortController()
@@ -251,19 +293,75 @@ function App() {
         setHealth({ label: 'Sin conexion', tone: 'danger' })
       })
 
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    if (!oidcEnabled) {
+      return
+    }
+
+    let mounted = true
+    async function initializeOidc() {
+      try {
+        if (!oidcManager) {
+          return
+        }
+        const params = new URLSearchParams(window.location.search)
+        const isCallback = params.has('code') && params.has('state')
+        const user = isCallback ? await oidcManager.signinRedirectCallback() : await oidcManager.getUser()
+        if (isCallback) {
+          window.history.replaceState({}, document.title, window.location.pathname)
+        }
+        if (mounted) {
+          setOidcUser(user && !user.expired ? user : null)
+        }
+      } catch {
+        if (mounted) {
+          setOidcUser(null)
+          setIdentityError('Sesion OIDC no disponible')
+        }
+      }
+    }
+
+    void initializeOidc()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (oidcEnabled && !accessToken) {
+      return
+    }
+
+    const controller = new AbortController()
     Promise.all([
-      fetch(apiUrl('/me'), { headers: authHeaders(), signal: controller.signal }),
-      fetch(apiUrl('/tenants'), { headers: authHeaders(), signal: controller.signal }),
+      fetch(apiUrl('/me'), { headers: authHeaders(undefined, accessToken), signal: controller.signal }),
+      fetch(apiUrl('/tenants'), { headers: authHeaders(undefined, accessToken), signal: controller.signal }),
+      fetch(apiUrl('/platform/plans'), { headers: authHeaders(undefined, accessToken), signal: controller.signal }),
     ])
-      .then(async ([meResponse, tenantsResponse]) => {
-        if (!meResponse.ok || !tenantsResponse.ok) {
+      .then(async ([meResponse, tenantsResponse, plansResponse]) => {
+        if (!meResponse.ok || !tenantsResponse.ok || !plansResponse.ok) {
           throw new Error('Identity bootstrap failed')
         }
         const currentUser = (await meResponse.json()) as CurrentUser
         const tenantList = (await tenantsResponse.json()) as TenantSummary[]
+        const plans = (await plansResponse.json()) as SubscriptionPlanSummary[]
         setMe(currentUser)
         setTenants(tenantList)
+        setSubscriptionPlans(plans)
         setActiveTenantId(tenantList[0]?.id ?? '')
+        if (currentUser.user.roles.includes('platform_admin')) {
+          const platformTenantResponse = await fetch(apiUrl('/platform/tenants'), {
+            headers: authHeaders(undefined, accessToken),
+            signal: controller.signal,
+          })
+          if (platformTenantResponse.ok) {
+            setPlatformTenants((await platformTenantResponse.json()) as TenantAdminSummary[])
+          }
+        }
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -273,7 +371,7 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [])
+  }, [accessToken])
 
   useEffect(() => {
     if (!activeTenantId) {
@@ -283,31 +381,31 @@ function App() {
     const controller = new AbortController()
     Promise.all([
       fetch(apiUrl(`/tenants/${activeTenantId}/companies`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/business-relationships`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/documents`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/invoices`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/einvoices`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/verifactu/records`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
       fetch(apiUrl(`/tenants/${activeTenantId}/verifactu/system-declarations/drafts`), {
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         signal: controller.signal,
       }),
     ])
@@ -360,7 +458,7 @@ function App() {
       })
 
     return () => controller.abort()
-  }, [activeTenantId])
+  }, [accessToken, activeTenantId])
 
   async function createCompany(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -374,7 +472,7 @@ function App() {
       const response = await fetch(apiUrl(`/tenants/${activeTenantId}/companies`), {
         method: 'POST',
         headers: {
-          ...authHeaders(activeTenantId),
+          ...authHeaders(activeTenantId, accessToken),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(companyForm),
@@ -417,7 +515,7 @@ function App() {
     try {
       const response = await fetch(apiUrl(`/tenants/${activeTenantId}/documents`), {
         method: 'POST',
-        headers: authHeaders(activeTenantId),
+        headers: authHeaders(activeTenantId, accessToken),
         body: formData,
       })
       if (!response.ok) {
@@ -435,6 +533,16 @@ function App() {
     }
   }
 
+  async function loginWithOidc() {
+    await oidcManager?.signinRedirect()
+  }
+
+  async function logoutFromOidc() {
+    if (oidcManager) {
+      await oidcManager.signoutRedirect()
+    }
+  }
+
   const activeTenant = useMemo(
     () => tenants.find((tenant) => tenant.id === activeTenantId) ?? tenants[0],
     [activeTenantId, tenants],
@@ -443,10 +551,12 @@ function App() {
   const latestSifRecord = sifRecords[0]
   const latestSystemDeclaration = systemDeclarations[0]
   const latestEInvoice = einvoices[0]
+  const displayUserEmail = me?.user.email ?? oidcUser?.profile.email ?? demoUserEmail
+  const displayUserName = me?.user.displayName ?? displayUserEmail
 
   const metricCards = useMemo(
     () => [
-      { label: 'Tenants asignados', value: tenants.length.toString(), trend: me?.user.displayName ?? demoUserEmail, icon: Users },
+      { label: 'Tenants asignados', value: tenants.length.toString(), trend: displayUserName, icon: Users },
       { label: 'Empresas visibles', value: companies.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Building2 },
       { label: 'Relaciones B2B', value: relationships.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Handshake },
       { label: 'Facturas', value: invoices.length.toString(), trend: formatCurrency(invoiceTotal), icon: FileText },
@@ -458,12 +568,12 @@ function App() {
       activeTenant,
       companies.length,
       documents.length,
+      displayUserName,
       einvoices.length,
       invoiceTotal,
       invoices.length,
       latestEInvoice,
       latestSifRecord,
-      me,
       relationships.length,
       sifRecords.length,
       tenants.length,
@@ -489,6 +599,31 @@ function App() {
   }, [health])
 
   const selectedDocumentCompanyId = documentForm.companyId || companies[0]?.id || ''
+
+  if (oidcEnabled && !accessToken) {
+    return (
+      <main className="auth-screen">
+        <section className="auth-panel">
+          <div className="brand-mark" aria-hidden="true">
+            <ShieldCheck size={24} />
+          </div>
+          <p className="eyebrow">Fiscal SaaS</p>
+          <h1>Acceso seguro</h1>
+          <p>OIDC activo</p>
+          {identityError ? (
+            <div className="warning-note" role="status">
+              <AlertTriangle size={18} />
+              <span>{identityError}</span>
+            </div>
+          ) : null}
+          <button className="primary-button" onClick={loginWithOidc} type="button">
+            <LockKeyhole size={18} />
+            Iniciar sesion
+          </button>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <div className="app-shell">
@@ -557,6 +692,12 @@ function App() {
               <UploadCloud size={18} />
               Subir documento
             </button>
+            {oidcEnabled ? (
+              <button className="ghost-button" onClick={logoutFromOidc} type="button">
+                <LockKeyhole size={18} />
+                Salir
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -594,8 +735,9 @@ function App() {
         <section className="identity-band" id="tenants" aria-label="Contexto de identidad">
           <div>
             <p className="eyebrow">Sesion</p>
-            <h2>{me?.user.displayName ?? 'Usuario fiscal'}</h2>
-            <span>{me?.user.email ?? demoUserEmail}</span>
+            <h2>{displayUserName}</h2>
+            <span>{displayUserEmail}</span>
+            <small>{oidcEnabled ? 'OIDC' : 'Demo header auth'}</small>
           </div>
           <div className="tenant-switcher" role="tablist" aria-label="Tenant activo">
             {tenants.map((tenant) => (
@@ -633,6 +775,54 @@ function App() {
             <span>Actualizando tenant</span>
           </div>
         ) : null}
+
+        <section className="saas-grid" aria-label="Gestion SaaS">
+          <article className="panel saas-panel">
+            <div className="panel-heading">
+              <div>
+                <p className="eyebrow">Planes</p>
+                <h2>Suscripciones</h2>
+              </div>
+              <ShieldCheck size={20} />
+            </div>
+            <div className="plan-list">
+              {subscriptionPlans.map((plan) => (
+                <article className="plan-card" key={plan.code}>
+                  <div>
+                    <strong>{plan.displayName}</strong>
+                    <span>{formatCurrency(plan.monthlyPriceCents / 100)}</span>
+                  </div>
+                  <small>{plan.maxUsers} usuarios · {plan.maxInvoices} facturas</small>
+                  <StatusBadge label={plan.includesEinvoice ? 'E-invoice' : 'Fiscal'} />
+                </article>
+              ))}
+            </div>
+          </article>
+
+          {platformTenants.length > 0 ? (
+            <article className="panel saas-panel">
+              <div className="panel-heading">
+                <div>
+                  <p className="eyebrow">Platform admin</p>
+                  <h2>Lifecycle tenants</h2>
+                </div>
+                <Users size={20} />
+              </div>
+              <div className="tenant-admin-list">
+                {platformTenants.slice(0, 5).map((tenant) => (
+                  <div className="tenant-admin-row" key={tenant.id}>
+                    <div>
+                      <strong>{tenant.displayName}</strong>
+                      <small>{tenant.slug}</small>
+                    </div>
+                    <StatusBadge label={tenant.subscriptionStatus} />
+                    <span>{tenant.planCode}</span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : null}
+        </section>
 
         <section className="metrics-grid" aria-label="Metricas principales">
           {metricCards.map((card) => {
@@ -1017,11 +1207,12 @@ function App() {
   )
 }
 
-function StatusBadge({ label }: { label: string }) {
-  const normalized = label.toLowerCase()
+function StatusBadge({ label }: { label?: string }) {
+  const displayLabel = label ?? 'Sin estado'
+  const normalized = displayLabel.toLowerCase()
   const tone = normalized.includes('activo') || normalized.includes('cliente') || normalized.includes('titular') ? 'success' : 'warning'
 
-  return <span className={`badge ${tone}`}>{label}</span>
+  return <span className={`badge ${tone}`}>{displayLabel}</span>
 }
 
 function formatRole(role?: string) {

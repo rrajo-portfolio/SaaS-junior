@@ -9,6 +9,8 @@ Environment: local kind preproduction.
 | Cluster | `fiscal-saas-preprod` |
 | Namespace | `fiscal-saas-preprod` |
 | Public URL | `http://127.0.0.1:18080` |
+| Keycloak URL | `http://127.0.0.1:18081` |
+| Prometheus URL | `http://127.0.0.1:19090` |
 | Jenkins URL | `http://127.0.0.1:8085/login` |
 
 ## Bootstrap
@@ -31,6 +33,25 @@ Expected HTTP health:
 
 - `GET /healthz` returns 200.
 - `GET /api/health` returns 200.
+- `GET /actuator/prometheus` returns 200 and contains JVM metrics.
+
+## Keycloak
+
+```powershell
+$env:KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME='<local-admin-user>'
+$env:KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD='<local-admin-password>'
+.\scripts\bootstrap-keycloak.ps1
+```
+
+Keycloak imports the `fiscal-saas` realm from `infra/keycloak/realm-export.json`. The frontend client is public and uses PKCE; no client secret is committed.
+
+## Observability
+
+```powershell
+docker compose -f infra\observability\docker-compose.observability.yml up -d
+```
+
+Prometheus scrapes `http://host.docker.internal:18080/actuator/prometheus`.
 
 ## Frontend E2E
 
@@ -74,3 +95,11 @@ Expected proxy headers:
 - API: `Cache-Control: no-store`
 - Versioned asset: `Cache-Control: public, max-age=31536000, immutable`
 - Warm asset request: `X-Cache-Status: HIT`
+
+## Public Preproduction Gate
+
+```powershell
+.\scripts\preprod-public-readiness.ps1
+```
+
+Without public host, TLS mode and OIDC sign-off variables, this script returns `BLOCKED_BY_EXTERNAL_INFRASTRUCTURE`. That is expected for the local-only environment.

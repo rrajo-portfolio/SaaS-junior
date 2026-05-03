@@ -11,5 +11,7 @@ spring:
       ddl-auto: validate
 
 app:
+  security:
+    auth-mode: demo
   documents:
     storage-path: target/test-document-storage

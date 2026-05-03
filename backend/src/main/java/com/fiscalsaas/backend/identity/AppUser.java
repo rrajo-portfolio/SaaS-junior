@@ -1,6 +1,8 @@
 package com.fiscalsaas.backend.identity;
 
 import java.time.Instant;
+import java.util.Locale;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -28,6 +30,16 @@ public class AppUser {
 	private Instant createdAt;
 
 	protected AppUser() {
+	}
+
+	public static AppUser create(String email, String displayName) {
+		AppUser user = new AppUser();
+		user.id = UUID.randomUUID().toString();
+		user.email = email.trim().toLowerCase(Locale.ROOT);
+		user.displayName = displayName.trim();
+		user.status = "ACTIVE";
+		user.createdAt = Instant.now();
+		return user;
 	}
 
 	public String id() {

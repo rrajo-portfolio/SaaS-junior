@@ -34,6 +34,32 @@ describe('App', () => {
               service: 'fiscal-saas-backend',
               checkedAt: '2026-05-03T15:00:00Z',
             }
+          : url.endsWith('/platform/plans')
+            ? [
+                {
+                  code: 'starter',
+                  displayName: 'Starter',
+                  status: 'ACTIVE',
+                  monthlyPriceCents: 2900,
+                  currency: 'EUR',
+                  maxUsers: 3,
+                  maxDocuments: 250,
+                  maxInvoices: 100,
+                  includesVerifactu: true,
+                  includesEinvoice: false,
+                },
+              ]
+          : url.endsWith('/platform/tenants')
+            ? [
+                {
+                  id: '10000000-0000-0000-0000-000000000001',
+                  slug: 'norte-asesores',
+                  displayName: 'Norte Asesores',
+                  status: 'ACTIVE',
+                  planCode: 'starter',
+                  subscriptionStatus: 'trialing',
+                },
+              ]
           : url.endsWith('/me')
             ? {
                 user: {
