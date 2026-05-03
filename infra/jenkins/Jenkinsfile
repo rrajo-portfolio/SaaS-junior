@@ -1,0 +1,126 @@
+pipeline {
+  agent any
+
+  options {
+    timestamps()
+    skipDefaultCheckout(false)
+    buildDiscarder(logRotator(numToKeepStr: '20'))
+  }
+
+  parameters {
+    booleanParam(name: 'DEPLOY_PREPROD_K8S', defaultValue: false, description: 'Deploy to local kind preproduction from Jenkins. Requires Docker and kubectl in the controller.')
+    booleanParam(name: 'RUN_PREPROD_E2E', defaultValue: false, description: 'Run Playwright against an already running preproduction URL.')
+    string(name: 'PREPROD_BASE_URL', defaultValue: 'http://127.0.0.1:18080', description: 'Preproduction URL visible from the Jenkins controller.')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Backend Verify') {
+      steps {
+        sh '''
+          docker run --rm \
+            --volumes-from "$HOSTNAME" \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v fiscal-saas-maven-cache:/root/.m2 \
+            -w "$PWD/backend" \
+            maven:3.9.9-eclipse-temurin-21 \
+            ./mvnw -B -DskipTests=false verify
+        '''
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'backend/target/surefire-reports/*.xml'
+        }
+      }
+    }
+
+    stage('Frontend Quality') {
+      steps {
+        sh '''
+          docker run --rm \
+            --volumes-from "$HOSTNAME" \
+            -w "$PWD/frontend" \
+            node:24-alpine \
+            sh -lc "npm ci && npm run lint && npm run test && npm run build"
+        '''
+      }
+    }
+
+    stage('Playwright Local Shell') {
+      steps {
+        sh '''
+          docker run --rm \
+            --volumes-from "$HOSTNAME" \
+            -w "$PWD/frontend" \
+            mcr.microsoft.com/playwright:v1.57.0-noble \
+            sh -lc "npm ci && npm run e2e"
+        '''
+      }
+    }
+
+    stage('Docker Compose Config') {
+      steps {
+        sh '''
+          docker compose -f infra/docker/docker-compose.local.yml config --quiet
+          docker compose -f infra/docker/docker-compose.preprod.yml config --quiet
+        '''
+      }
+    }
+
+    stage('Build Runtime Images') {
+      steps {
+        sh '''
+          docker build -f infra/docker/backend.Dockerfile -t fiscal-saas-backend:ci .
+          docker build -f infra/docker/frontend.Dockerfile --build-arg VITE_API_BASE_URL=/api -t fiscal-saas-frontend:ci .
+          docker build -f infra/docker/nginx.Dockerfile -t fiscal-saas-nginx:ci .
+        '''
+      }
+    }
+
+    stage('Deploy Kubernetes Preprod') {
+      when {
+        expression { return params.DEPLOY_PREPROD_K8S }
+      }
+      steps {
+        sh 'pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/k8s-deploy-preprod.ps1'
+      }
+    }
+
+    stage('Preprod Smoke') {
+      when {
+        expression { return params.DEPLOY_PREPROD_K8S }
+      }
+      steps {
+        sh 'pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/k8s-smoke-preprod.ps1'
+      }
+    }
+
+    stage('Preprod Playwright') {
+      when {
+        expression { return params.RUN_PREPROD_E2E }
+      }
+      steps {
+        sh '''
+          docker run --rm \
+            -e PLAYWRIGHT_BASE_URL="${PREPROD_BASE_URL}" \
+            -v "$PWD/frontend:/workspace" \
+            -w /workspace \
+            mcr.microsoft.com/playwright:v1.57.0-noble \
+            sh -lc "npm ci && npm run e2e:preprod"
+        '''
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts allowEmptyArchive: true, artifacts: 'frontend/playwright-report/**, frontend/test-results/**, backend/target/surefire-reports/**'
+      cleanWs(deleteDirs: true, disableDeferredWipeout: true)
+    }
+  }
+}

@@ -22,10 +22,14 @@ No `.env` file or `.env` template is stored in this repository.
 | `APP_DOCUMENT_STORAGE_PATH` | Backend filesystem path for preproduction document binaries. |
 | `APP_DOCUMENT_MAX_FILE_SIZE` | Maximum accepted single document upload size. |
 | `APP_DOCUMENT_MAX_REQUEST_SIZE` | Maximum accepted multipart request size. |
+| `JENKINS_ADMIN_ID` | Local Jenkins bootstrap administrator username. |
+| `JENKINS_ADMIN_PASSWORD` | Local Jenkins bootstrap administrator password. |
+| `JENKINS_REPO_URL` | Git repository URL used by Jenkins Configuration as Code. |
+| `JENKINS_REPO_BRANCH` | Git branch used by the generated Jenkins pipeline job. |
+| `JENKINS_URL` | Local URL advertised by the Jenkins controller. |
 
 ## Local Setup
 
 Create a local `.env` file outside version control with the variables needed by the service you are running. Use non-production credentials only.
 
 For Kubernetes, create Secrets with `kubectl create secret` or a sealed-secret workflow. Do not commit generated secret manifests containing real values.
-
