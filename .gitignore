@@ -1,7 +1,40 @@
+# Codex / local orchestration only
+AGENTS.md
+TOOLS.md
+PHASES.md
+PROMPTS.md
+COMPLIANCE.md
+ARCHITECTURE.md
+DESIGN.md
+DESING.md
+.codex/
+prompts/
+artifacts/
+REVIEW_PACKET.md
+GATEKEEPER_RESPONSE.md
+*starter*.zip
+
 # Secrets and local environment
 .env
 .env.*
-!.env.example
+*.env
+*.env.*
+.env.example
+.env.EXAMPLE
+.env.sample
+.env.template
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.p12
+*.jks
+*.crt
+*.csr
+kubeconfig*
+id_rsa
+id_ed25519
 
 # Java / Maven
 target/
@@ -26,4 +59,3 @@ Thumbs.db
 logs/
 *.log
 tmp/
-
