@@ -117,6 +117,8 @@ if ($LASTEXITCODE -ne 0) {
 Invoke-Checked kubectl @("apply", "-k", (Join-Path $repoRoot "infra\k8s\preprod"))
 Invoke-Checked kubectl @("-n", $Namespace, "rollout", "status", "statefulset/mysql", "--timeout=240s")
 Invoke-Checked kubectl @("-n", $Namespace, "rollout", "restart", "deployment/backend")
+Invoke-Checked kubectl @("-n", $Namespace, "rollout", "restart", "deployment/frontend")
+Invoke-Checked kubectl @("-n", $Namespace, "rollout", "restart", "deployment/nginx")
 Invoke-Checked kubectl @("-n", $Namespace, "rollout", "status", "deployment/backend", "--timeout=240s")
 Invoke-Checked kubectl @("-n", $Namespace, "rollout", "status", "deployment/frontend", "--timeout=180s")
 Invoke-Checked kubectl @("-n", $Namespace, "rollout", "status", "deployment/nginx", "--timeout=180s")
