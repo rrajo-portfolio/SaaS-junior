@@ -307,7 +307,7 @@ h3 {
 }
 
 .metrics-grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   margin-bottom: 18px;
 }
 
@@ -504,6 +504,7 @@ h3 {
 }
 
 .invoice-panel,
+.sif-panel,
 .document-panel {
   margin-top: 18px;
 }
@@ -556,6 +557,56 @@ h3 {
 .invoice-row strong,
 .invoice-row span {
   display: block;
+}
+
+.sif-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.sif-summary div {
+  min-height: 76px;
+  display: grid;
+  align-content: center;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.sif-summary span,
+.sif-row span,
+.sif-row small {
+  color: var(--color-text-muted);
+}
+
+.sif-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sif-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 112px 72px minmax(170px, 1fr) minmax(170px, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.sif-summary code,
+.sif-row code {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+  font-size: 12px;
 }
 
 .document-upload {
@@ -697,7 +748,9 @@ h3 {
   .document-upload,
   .document-row,
   .invoice-summary,
-  .invoice-row {
+  .invoice-row,
+  .sif-summary,
+  .sif-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -758,7 +811,9 @@ h3 {
   .document-upload,
   .document-row,
   .invoice-summary,
-  .invoice-row {
+  .invoice-row,
+  .sif-summary,
+  .sif-row {
     grid-template-columns: 1fr;
   }
 }

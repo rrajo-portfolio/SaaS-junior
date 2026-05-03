@@ -596,6 +596,212 @@ paths:
           description: Current role cannot mutate tenant invoices
         "404":
           description: Invoice not found in tenant
+  /api/tenants/{tenantId}/verifactu/records:
+    get:
+      operationId: listTenantSifRecords
+      summary: SIF records scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant SIF records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SifRecord"
+    post:
+      operationId: createTenantSifRegistrationRecord
+      summary: Create an append-only SIF registration record for an issued invoice
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSifRecordRequest"
+      responses:
+        "201":
+          description: SIF registration record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifRecord"
+        "400":
+          description: Validation failed
+        "403":
+          description: Current role cannot mutate SIF records
+        "409":
+          description: Invoice already has a registration record
+  /api/tenants/{tenantId}/verifactu/records/verify:
+    get:
+      operationId: verifyTenantSifHashChain
+      summary: Verify tenant SIF hash chain integrity
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Hash chain verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifHashChainVerification"
+  /api/tenants/{tenantId}/verifactu/records/{recordId}/cancel:
+    patch:
+      operationId: createTenantSifCancellationRecord
+      summary: Create an append-only SIF cancellation record
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelSifRecordRequest"
+      responses:
+        "200":
+          description: SIF cancellation record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifRecord"
+        "403":
+          description: Current role cannot mutate SIF records
+        "404":
+          description: SIF registration record not found in tenant
+        "409":
+          description: SIF registration record is already cancelled
+  /api/tenants/{tenantId}/verifactu/records/{recordId}/events:
+    get:
+      operationId: listTenantSifRecordEvents
+      summary: Append-only event log for a SIF record
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: SIF record events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SifEvent"
+  /api/tenants/{tenantId}/verifactu/exports:
+    get:
+      operationId: listTenantSifExports
+      summary: SIF export batches scoped to a tenant
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: Tenant SIF exports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SifExportBatch"
+    post:
+      operationId: createTenantSifExport
+      summary: Create a readable export batch for all current tenant SIF records
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "201":
+          description: SIF export batch created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifExportBatch"
+  /api/tenants/{tenantId}/verifactu/exports/{exportId}:
+    get:
+      operationId: getTenantSifExport
+      summary: Read a SIF export batch by id
+      parameters:
+        - name: tenantId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: exportId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/UserEmail"
+        - $ref: "#/components/parameters/TenantId"
+      responses:
+        "200":
+          description: SIF export batch
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SifExportBatch"
 components:
   parameters:
     UserEmail:
@@ -1013,6 +1219,155 @@ components:
         - ISSUED
         - RECTIFIED
         - CANCELLED
+    SifRecord:
+      type: object
+      required:
+        - id
+        - tenantId
+        - invoiceId
+        - invoiceNumber
+        - issuerCompany
+        - customerCompany
+        - recordType
+        - sequenceNumber
+        - previousHash
+        - recordHash
+        - canonicalPayload
+        - systemVersion
+        - normativeVersion
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+        issuerCompany:
+          $ref: "#/components/schemas/Company"
+        customerCompany:
+          $ref: "#/components/schemas/Company"
+        sourceRecordId:
+          type: string
+          format: uuid
+        recordType:
+          $ref: "#/components/schemas/SifRecordType"
+        sequenceNumber:
+          type: integer
+          format: int64
+        previousHash:
+          type: string
+        recordHash:
+          type: string
+          minLength: 64
+          maxLength: 64
+        canonicalPayload:
+          type: string
+          description: Canonical JSON payload used as hash input. It is exportable evidence, not a legal certification.
+        systemVersion:
+          type: string
+        normativeVersion:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    CreateSifRecordRequest:
+      type: object
+      required:
+        - invoiceId
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+    CancelSifRecordRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 500
+    SifEvent:
+      type: object
+      required:
+        - id
+        - recordId
+        - eventType
+        - eventAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        recordId:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+            - RECORD_REGISTERED
+            - RECORD_CANCELLED
+            - EXPORT_CREATED
+        eventAt:
+          type: string
+          format: date-time
+        details:
+          type: string
+    SifExportBatch:
+      type: object
+      required:
+        - id
+        - tenantId
+        - recordFromSequence
+        - recordToSequence
+        - recordCount
+        - exportSha256
+        - payload
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        recordFromSequence:
+          type: integer
+          format: int64
+        recordToSequence:
+          type: integer
+          format: int64
+        recordCount:
+          type: integer
+        exportSha256:
+          type: string
+          minLength: 64
+          maxLength: 64
+        payload:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    SifHashChainVerification:
+      type: object
+      required:
+        - valid
+        - recordCount
+        - lastHash
+      properties:
+        valid:
+          type: boolean
+        recordCount:
+          type: integer
+        lastHash:
+          type: string
+    SifRecordType:
+      type: string
+      enum:
+        - REGISTRATION
+        - CANCELLATION
     Document:
       type: object
       required:
