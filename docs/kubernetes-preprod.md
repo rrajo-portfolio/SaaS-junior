@@ -17,7 +17,7 @@ This repository includes a local Kubernetes preproduction runtime based on kind.
 | Path | Purpose |
 |---|---|
 | `infra/k8s/kind/cluster.yml` | Local kind cluster definition and host port mapping. |
-| `infra/k8s/preprod` | Namespace, ConfigMap, workloads, Services and NetworkPolicies. |
+| `infra/k8s/preprod` | Namespace, ConfigMap, workloads, Services, optional Ingress and NetworkPolicies. |
 | `infra/docker/mysql.Dockerfile` | Local MySQL runtime image used by kind to avoid cluster-time registry pulls. |
 | `scripts/k8s-create-kind-cluster.ps1` | Local cluster bootstrap. |
 | `scripts/k8s-deploy-preprod.ps1` | Image build, kind image load, Secret creation from local environment and rollout validation. |
@@ -39,6 +39,10 @@ The Kubernetes Secret is named `fiscal-saas-runtime` and is created locally from
 | `SPRING_DATASOURCE_PASSWORD` | Backend datasource password. |
 
 No Secret manifest with real values is stored in the repository.
+
+## Ingress
+
+An optional Ingress manifest routes `fiscal-saas-preprod.local` to the in-cluster Nginx Service. The local kind bootstrap does not assume an ingress controller exists; the validated path remains the NodePort mapped by `infra/k8s/kind/cluster.yml`.
 
 ## Validation State
 

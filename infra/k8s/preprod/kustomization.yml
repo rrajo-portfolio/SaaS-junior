@@ -8,4 +8,5 @@ resources:
   - backend.yml
   - frontend.yml
   - nginx.yml
+  - ingress.yml
   - network-policy.yml
