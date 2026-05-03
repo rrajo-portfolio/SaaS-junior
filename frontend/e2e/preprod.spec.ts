@@ -9,6 +9,7 @@ test('loads tenant data from the preproduction backend', async ({ page }) => {
   await page.getByRole('tab', { name: /Norte Asesores/ }).click()
   await expect(page.getByRole('table', { name: 'Empresas del tenant' }).getByText('Norte Asesores SL')).toBeVisible()
   await expect(page.getByText('Gestion cliente')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Facturacion fiscal' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Centro documental' })).toBeVisible()
   await expect(page.getByText('Platform Admin').first()).toBeVisible()
 })

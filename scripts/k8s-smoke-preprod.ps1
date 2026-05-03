@@ -55,4 +55,5 @@ Assert-AuthenticatedHttpOk "$BaseUrl/api/me" $userHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/companies" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/business-relationships" $tenantHeaders
 Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/documents" $tenantHeaders
+Assert-AuthenticatedHttpOk "$BaseUrl/api/tenants/10000000-0000-0000-0000-000000000001/invoices" $tenantHeaders
 Assert-HttpOk "$BaseUrl/"

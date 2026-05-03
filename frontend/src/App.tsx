@@ -8,6 +8,7 @@ import {
   ChevronRight,
   FileCheck2,
   FileClock,
+  FileText,
   Files,
   Gauge,
   Handshake,
@@ -88,6 +89,22 @@ type DocumentSummary = {
   updatedAt: string
 }
 
+type InvoiceSummary = {
+  id: string
+  tenantId: string
+  issuerCompany: CompanySummary
+  customerCompany: CompanySummary
+  invoiceNumber: string
+  invoiceType: string
+  status: string
+  issueDate: string
+  currency: string
+  taxableBase: number
+  taxTotal: number
+  total: number
+  rectifiesInvoiceId?: string
+}
+
 type CompanyFormState = {
   legalName: string
   taxId: string
@@ -157,6 +174,7 @@ function App() {
   const [companies, setCompanies] = useState<CompanySummary[]>([])
   const [relationships, setRelationships] = useState<BusinessRelationship[]>([])
   const [documents, setDocuments] = useState<DocumentSummary[]>([])
+  const [invoices, setInvoices] = useState<InvoiceSummary[]>([])
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyForm)
   const [documentForm, setDocumentForm] = useState<DocumentFormState>(initialDocumentForm)
   const [documentFile, setDocumentFile] = useState<File | null>(null)
@@ -229,17 +247,23 @@ function App() {
         headers: authHeaders(activeTenantId),
         signal: controller.signal,
       }),
+      fetch(apiUrl(`/tenants/${activeTenantId}/invoices`), {
+        headers: authHeaders(activeTenantId),
+        signal: controller.signal,
+      }),
     ])
-      .then(async ([companiesResponse, relationshipsResponse, documentsResponse]) => {
-        if (!companiesResponse.ok || !relationshipsResponse.ok || !documentsResponse.ok) {
+      .then(async ([companiesResponse, relationshipsResponse, documentsResponse, invoicesResponse]) => {
+        if (!companiesResponse.ok || !relationshipsResponse.ok || !documentsResponse.ok || !invoicesResponse.ok) {
           throw new Error('Company scope failed')
         }
         const tenantCompanies = (await companiesResponse.json()) as CompanySummary[]
         const tenantRelationships = (await relationshipsResponse.json()) as BusinessRelationship[]
         const tenantDocuments = (await documentsResponse.json()) as DocumentSummary[]
+        const tenantInvoices = (await invoicesResponse.json()) as InvoiceSummary[]
         setCompanies(tenantCompanies)
         setRelationships(tenantRelationships)
         setDocuments(tenantDocuments)
+        setInvoices(tenantInvoices)
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') {
@@ -328,15 +352,17 @@ function App() {
     () => tenants.find((tenant) => tenant.id === activeTenantId) ?? tenants[0],
     [activeTenantId, tenants],
   )
+  const invoiceTotal = invoices.reduce((total, invoice) => total + Number(invoice.total), 0)
 
   const metricCards = useMemo(
     () => [
       { label: 'Tenants asignados', value: tenants.length.toString(), trend: me?.user.displayName ?? demoUserEmail, icon: Users },
       { label: 'Empresas visibles', value: companies.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Building2 },
       { label: 'Relaciones B2B', value: relationships.length.toString(), trend: activeTenant?.name ?? 'Sin tenant activo', icon: Handshake },
+      { label: 'Facturas', value: invoices.length.toString(), trend: formatCurrency(invoiceTotal), icon: FileText },
       { label: 'Documentos', value: documents.length.toString(), trend: 'SHA-256', icon: FileClock },
     ],
-    [activeTenant, companies.length, documents.length, me, relationships.length, tenants.length],
+    [activeTenant, companies.length, documents.length, invoiceTotal, invoices.length, me, relationships.length, tenants.length],
   )
 
   const healthDetail = useMemo(() => {
@@ -377,6 +403,10 @@ function App() {
           <a href="#documents">
             <Files size={18} />
             <span>Documentos</span>
+          </a>
+          <a href="#invoices">
+            <FileText size={18} />
+            <span>Facturas</span>
           </a>
           <a href="#security">
             <LockKeyhole size={18} />
@@ -612,6 +642,50 @@ function App() {
           </aside>
         </section>
 
+        <section className="panel invoice-panel" id="invoices" aria-label="Facturacion fiscal">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Facturas</p>
+              <h2>Facturacion fiscal</h2>
+            </div>
+            <FileText size={20} />
+          </div>
+
+          <div className="invoice-summary" aria-label="Resumen de facturas">
+            <div>
+              <span>Base imponible</span>
+              <strong>{formatCurrency(invoices.reduce((total, invoice) => total + Number(invoice.taxableBase), 0))}</strong>
+            </div>
+            <div>
+              <span>Impuestos</span>
+              <strong>{formatCurrency(invoices.reduce((total, invoice) => total + Number(invoice.taxTotal), 0))}</strong>
+            </div>
+            <div>
+              <span>Total</span>
+              <strong>{formatCurrency(invoiceTotal)}</strong>
+            </div>
+          </div>
+
+          <div className="invoice-list">
+            {invoices.length === 0 ? (
+              <div className="empty-state">Sin facturas en el tenant activo</div>
+            ) : (
+              invoices.map((invoice) => (
+                <article className="invoice-row" key={invoice.id}>
+                  <div>
+                    <strong>{invoice.invoiceNumber}</strong>
+                    <span>{invoice.customerCompany.legalName}</span>
+                  </div>
+                  <StatusBadge label={formatInvoiceStatus(invoice.status)} />
+                  <span>{formatInvoiceType(invoice.invoiceType)}</span>
+                  <span>{invoice.issueDate}</span>
+                  <strong>{formatCurrency(invoice.total)}</strong>
+                </article>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="panel document-panel" id="documents" aria-label="Centro documental">
           <div className="panel-heading">
             <div>
@@ -748,6 +822,33 @@ function formatDocumentType(value: string) {
     OTHER: 'Otro',
   }
   return labels[value] ?? value
+}
+
+function formatInvoiceType(value: string) {
+  const labels: Record<string, string> = {
+    ISSUED: 'Emitida',
+    RECEIVED: 'Recibida',
+    RECTIFYING: 'Rectificativa',
+  }
+  return labels[value] ?? value
+}
+
+function formatInvoiceStatus(value: string) {
+  const labels: Record<string, string> = {
+    DRAFT: 'Borrador',
+    ISSUED: 'Emitida',
+    RECTIFIED: 'Rectificada',
+    CANCELLED: 'Anulada',
+  }
+  return labels[value] ?? value
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 2,
+  }).format(value)
 }
 
 function formatBytes(value: number) {
