@@ -74,6 +74,19 @@ pipeline {
     stage('Docker Compose Config') {
       steps {
         sh '''
+          cleanup_env() {
+            rm -f .env
+          }
+          trap cleanup_env EXIT
+          ci_secret="$(date +%s)-${BUILD_TAG}"
+          cat > .env <<EOF
+MYSQL_DATABASE=fiscal_saas_ci
+MYSQL_USER=fiscal_saas_ci
+MYSQL_PASSWORD=${ci_secret}
+MYSQL_ROOT_PASSWORD=${ci_secret}-root
+SPRING_DATASOURCE_USERNAME=fiscal_saas_ci
+SPRING_DATASOURCE_PASSWORD=${ci_secret}
+EOF
           docker compose -f infra/docker/docker-compose.local.yml config --quiet
           docker compose -f infra/docker/docker-compose.preprod.yml config --quiet
         '''
