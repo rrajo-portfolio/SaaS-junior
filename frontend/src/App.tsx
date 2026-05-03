@@ -229,6 +229,7 @@ function App() {
   const [identityError, setIdentityError] = useState<string | null>(null)
   const [companyMutationMessage, setCompanyMutationMessage] = useState<string | null>(null)
   const [documentMutationMessage, setDocumentMutationMessage] = useState<string | null>(null)
+  const [isTenantDataLoading, setIsTenantDataLoading] = useState(false)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -352,6 +353,11 @@ function App() {
         }
         setIdentityError('Tenant no accesible')
       })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsTenantDataLoading(false)
+        }
+      })
 
     return () => controller.abort()
   }, [activeTenantId])
@@ -464,6 +470,17 @@ function App() {
     ],
   )
 
+  const moduleTabs = useMemo(
+    () => [
+      { href: '#companies', label: 'Empresas', value: companies.length, icon: Building2 },
+      { href: '#invoices', label: 'Facturas', value: invoices.length, icon: FileText },
+      { href: '#einvoices', label: 'E-invoice', value: einvoices.length, icon: FileCheck2 },
+      { href: '#verifactu', label: 'Verifactu', value: sifRecords.length, icon: Fingerprint },
+      { href: '#documents', label: 'Documentos', value: documents.length, icon: Files },
+    ],
+    [companies.length, documents.length, einvoices.length, invoices.length, sifRecords.length],
+  )
+
   const healthDetail = useMemo(() => {
     if (health.tone !== 'success') {
       return apiRoot
@@ -561,6 +578,19 @@ function App() {
           })}
         </section>
 
+        <section className="module-rail" aria-label="Navegacion operativa">
+          {moduleTabs.map((item) => {
+            const Icon = item.icon
+            return (
+              <a href={item.href} key={item.href}>
+                <Icon size={18} />
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+              </a>
+            )
+          })}
+        </section>
+
         <section className="identity-band" id="tenants" aria-label="Contexto de identidad">
           <div>
             <p className="eyebrow">Sesion</p>
@@ -573,7 +603,12 @@ function App() {
                 aria-selected={tenant.id === activeTenantId}
                 className={tenant.id === activeTenantId ? 'selected' : ''}
                 key={tenant.id}
-                onClick={() => setActiveTenantId(tenant.id)}
+                onClick={() => {
+                  if (tenant.id !== activeTenantId) {
+                    setIsTenantDataLoading(true)
+                    setActiveTenantId(tenant.id)
+                  }
+                }}
                 role="tab"
                 type="button"
               >
@@ -589,6 +624,13 @@ function App() {
           <div className="warning-note identity-warning" role="status">
             <AlertTriangle size={18} />
             <span>{identityError}</span>
+          </div>
+        ) : null}
+
+        {isTenantDataLoading ? (
+          <div className="loading-strip" role="status">
+            <Activity size={18} />
+            <span>Actualizando tenant</span>
           </div>
         ) : null}
 
