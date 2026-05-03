@@ -30,6 +30,7 @@ pipeline {
             -v /var/run/docker.sock:/var/run/docker.sock \
             -e MAVEN_CONFIG=/tmp/.m2 \
             -e TESTCONTAINERS_RYUK_DISABLED=true \
+            -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
             -w "$PWD/backend" \
             maven:3.9.9-eclipse-temurin-21 \
             sh ./mvnw -B -DskipTests=false verify
