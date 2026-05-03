@@ -154,6 +154,17 @@ describe('App', () => {
                           createdAt: '2026-05-03T15:00:00Z',
                         },
                       ]
+                  : url.endsWith('/verifactu/system-declarations/drafts')
+                    ? [
+                        {
+                          id: '81000000-0000-0000-0000-000000000001',
+                          tenantId: '10000000-0000-0000-0000-000000000001',
+                          status: 'DRAFT',
+                          payload: '{"certified":false,"reviewRequired":true}',
+                          payloadSha256: 'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd',
+                          createdAt: '2026-05-03T15:00:00Z',
+                        },
+                      ]
                   : [
                       {
                         id: '40000000-0000-0000-0000-000000000001',
@@ -182,5 +193,6 @@ describe('App', () => {
     expect(screen.getByText('Factura recibida demo')).toBeInTheDocument()
     expect(screen.getAllByText('F2026-0001').length).toBeGreaterThan(0)
     expect(screen.getByText('Alta')).toBeInTheDocument()
+    expect(screen.getByText('abcdefabcdefabcd')).toBeInTheDocument()
   })
 })
