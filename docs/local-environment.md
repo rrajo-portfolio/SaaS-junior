@@ -9,10 +9,10 @@ Date: 2026-05-03
 | Docker CLI | Installed, version 28.5.2. |
 | Docker daemon | Running, server version 28.5.2. |
 | Docker Compose | Installed, version 2.40.3. |
-| kubectl | Installed, client only. No cluster was validated. |
-| Helm | Installed. |
-| kind | Not installed. |
-| minikube | Not installed. |
+| kubectl | Installed, client version 1.34.2. Local kind cluster validated. |
+| Helm | Installed, version 4.0.0. |
+| kind | Installed, version 0.31.0. |
+| minikube | Not installed. Not required while kind is the selected local cluster provider. |
 | Java | Installed, Java 21. |
 | Node.js | Installed. |
 | npm | Installed. |
@@ -21,7 +21,6 @@ Date: 2026-05-03
 
 ## Current Blockers
 
-- `BLOCKED_BY_LOCAL_ENVIRONMENT`: Kubernetes runtime is not validated because neither kind nor minikube is installed and no local cluster exists.
 - `BLOCKED_BY_GITHUB_PERMISSIONS`: PR creation through the available integration returned forbidden permissions.
 
 ## Validated Runtime
@@ -30,4 +29,9 @@ Date: 2026-05-03
 - `docker compose -f infra/docker/docker-compose.preprod.yml config` passed.
 - `docker compose -f infra/docker/docker-compose.preprod.yml up -d --build --force-recreate` passed.
 - Preprod containers for MySQL, backend, frontend and Nginx reached healthy state.
+- `kind` cluster `fiscal-saas-preprod` was created with Kubernetes v1.34.3.
+- `kubectl get nodes` passed with the kind control plane in `Ready` state.
+- Kubernetes namespace `fiscal-saas-preprod` was created.
+- Kubernetes preprod workloads for MySQL, backend, frontend and Nginx reached `Running` and ready state.
+- `scripts/k8s-smoke-preprod.ps1` passed against `http://127.0.0.1:18080`.
 

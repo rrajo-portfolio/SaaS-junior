@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fiscal-saas-preprod
+  labels:
+    app.kubernetes.io/part-of: fiscal-saas
+    app.kubernetes.io/environment: preprod
