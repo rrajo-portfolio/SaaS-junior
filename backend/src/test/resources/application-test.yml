@@ -10,3 +10,6 @@ spring:
     hibernate:
       ddl-auto: validate
 
+app:
+  documents:
+    storage-path: target/test-document-storage

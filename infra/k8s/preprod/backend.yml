@@ -32,6 +32,8 @@ spec:
         app.kubernetes.io/name: backend
         app.kubernetes.io/part-of: fiscal-saas
     spec:
+      securityContext:
+        fsGroup: 65534
       containers:
         - name: backend
           image: fiscal-saas-backend:preprod
@@ -70,6 +72,11 @@ spec:
                 configMapKeyRef:
                   name: fiscal-saas-config
                   key: AEAT_PRODUCTION_ENABLED
+            - name: APP_DOCUMENT_STORAGE_PATH
+              value: /app/storage/documents
+          volumeMounts:
+            - name: document-storage
+              mountPath: /app/storage/documents
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
@@ -93,3 +100,6 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+      volumes:
+        - name: document-storage
+          emptyDir: {}

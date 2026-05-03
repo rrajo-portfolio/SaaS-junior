@@ -8,4 +8,5 @@ test('loads the fiscal operations dashboard', async ({ page }) => {
   await expect(page.getByRole('table', { name: 'Empresas del tenant' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Registrar cliente o proveedor' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Relaciones B2B' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Centro documental' })).toBeVisible()
 })
