@@ -42,7 +42,7 @@ describe('App', () => {
 
     render(<App />)
 
-    await waitFor(() => expect(screen.getByText('Operativo')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('Operativo').length).toBeGreaterThan(0))
     await waitFor(() => expect(screen.getAllByText('Norte Asesores SL').length).toBeGreaterThan(0))
 
     expect(screen.getByRole('region', { name: 'Documentos por empresa' })).toBeInTheDocument()
@@ -123,10 +123,6 @@ function responseFor(url: string, method: string) {
       startsAt: '2026-01-01',
     }]
   }
-  if (url.includes('/companies')) {
-    const companies = [issuer, customer]
-    return url.includes('search=Alba') ? [customer] : companies
-  }
   if (url.includes('/documents')) {
     if (method === 'POST') {
       return documentPayload('doc-created', customer)
@@ -151,6 +147,74 @@ function responseFor(url: string, method: string) {
       payloadSha256: 'abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd',
       createdAt: '2026-05-07T10:00:00Z',
     }]
+  }
+  if (url.includes('/fiscal-settings')) {
+    return {
+      id: 'settings-1',
+      companyId: issuer.id,
+      legalName: issuer.legalName,
+      tradeName: issuer.legalName,
+      nif: issuer.taxId,
+      vatNumber: issuer.taxId,
+      addressLine1: 'Calle Fiscal 1',
+      city: 'Madrid',
+      province: 'Madrid',
+      postalCode: '28001',
+      country: 'ES',
+      defaultCurrency: 'EUR',
+      defaultPaymentTermsDays: 30,
+      defaultVatRate: 21,
+      defaultLanguage: 'es',
+      pdfTemplate: 'standard',
+      sifMode: 'LOCAL_ONLY',
+      verifactuLabelEnabled: false,
+    }
+  }
+  if (url.includes('/invoice-series')) {
+    return [{
+      id: 'series-1',
+      companyId: issuer.id,
+      code: '2026',
+      prefix: 'F-2026-',
+      nextNumber: 2,
+      padding: 6,
+      active: true,
+    }]
+  }
+  if (url.includes('/customers')) {
+    return [{
+      id: 'customer-1',
+      companyId: issuer.id,
+      customerType: 'COMPANY',
+      name: 'Cliente Demo SL',
+      nif: 'B11223344',
+      email: 'cliente@example.local',
+      addressLine1: 'Calle Cliente 1',
+      city: 'Madrid',
+      province: 'Madrid',
+      postalCode: '28002',
+      country: 'ES',
+      status: 'ACTIVE',
+    }]
+  }
+  if (url.includes('/audit-events')) {
+    return [{
+      id: 'audit-1',
+      companyId: issuer.id,
+      actorEmail: 'ana.admin@fiscalsaas.local',
+      eventType: 'INVOICE_CREATED',
+      entityType: 'INVOICE',
+      entityId: '70000000-0000-0000-0000-000000000001',
+      eventHash: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      occurredAt: '2026-05-07T10:00:00Z',
+    }]
+  }
+  if (url.includes('/exports')) {
+    return []
+  }
+  if (url.includes('/companies')) {
+    const companies = [issuer, customer]
+    return url.includes('search=Alba') ? [customer] : companies
   }
   return []
 }

@@ -14,6 +14,15 @@ test('runs the local SaaS fiscal flow end to end', async ({ page }) => {
   await expect(page).toHaveTitle(/Fiscal SaaS/)
   await expect(page.getByRole('heading', { name: 'SaaS fiscal operativo' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Facturas por empresa' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Control de preproduccion' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Separacion operativa' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Estado del sistema' })).toBeVisible()
+  await expect(page.getByText('Datos demo controlados')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Resumen operativo de empresa' })).toBeVisible()
+
+  await page.getByRole('searchbox', { name: 'Buscar en tenant' }).fill('Alba')
+  await expect(page.getByRole('button', { name: /Empresa Alba Retail Group SL/ })).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Buscar en tenant' }).fill('')
 
   await page.getByRole('searchbox', { name: 'Buscar empresa' }).fill('Alba')
   await expect(page.getByRole('button', { name: /Alba Retail Group SL/ })).toBeVisible()
@@ -40,6 +49,9 @@ test('runs the local SaaS fiscal flow end to end', async ({ page }) => {
   await page.getByLabel('CP cliente').fill('28002')
   await page.getByRole('button', { name: 'Crear cliente' }).click()
   await expect(page.getByText('Cliente creado y seleccionado')).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Buscar cliente' }).fill('Final QA')
+  await expect(page.getByRole('button', { name: /Cliente Final QA SL/ })).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Buscar cliente' }).fill('')
 
   const invoiceNumber = `PW-${Date.now()}`
   await page.getByLabel('Numero').fill(invoiceNumber)
@@ -68,18 +80,22 @@ test('runs the local SaaS fiscal flow end to end', async ({ page }) => {
 
   await page.getByLabel('Pago', { exact: true }).fill('181.5')
   await page.getByRole('button', { name: 'Registrar pago' }).click()
-  await expect(page.getByText('Pago registrado')).toBeVisible()
+  await expect(page.locator('.form-message').filter({ hasText: 'Pago registrado' })).toBeVisible()
 
   await page.getByRole('button', { name: 'PDF' }).click()
   await expect(page.getByText('PDF descargado')).toBeVisible()
+  await expect(page.getByText(/PDF hash/)).toBeVisible()
+  await expect(page.getByText(/cccccccccccc/)).toBeVisible()
 
   await page.getByRole('region', { name: 'Factura electronica local' }).getByRole('button', { name: 'Generar' }).click()
   await expect(page.getByText('E-invoice local generada')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Factura electronica local' }).getByText('GENERATED')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Factura electronica local' }).getByText(/LOCAL STUB/)).toBeVisible()
 
   await page.getByRole('region', { name: 'Registro SIF local' }).getByRole('button', { name: 'Registrar' }).click()
   await expect(page.getByText('Registro SIF local creado')).toBeVisible()
   await expect(page.getByRole('region', { name: 'Registro SIF local' }).getByText(/Secuencia/)).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Timeline de factura' })).toBeVisible()
 
   await page.getByRole('button', { name: 'Generar ZIP' }).click()
   await expect(page.getByText('Paquete de evidencia generado')).toBeVisible()
@@ -372,6 +388,10 @@ async function mockApi(page: Page, state: ApiState) {
       return route.fulfill({
         status: 200,
         contentType: 'application/pdf',
+        headers: {
+          'Access-Control-Expose-Headers': 'X-Content-SHA256',
+          'X-Content-SHA256': 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc',
+        },
         body: '%PDF-1.4',
       })
     }

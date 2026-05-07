@@ -41,6 +41,7 @@ npm run e2e
 - The UI sends the tenant in the URL and in `X-Tenant-Id` for demo mode.
 - Switching tenant reloads companies, documents, invoices, e-invoices and SIF records.
 - A company created in one tenant must not appear in another tenant.
+- The dashboard includes operator-readiness cards for roles, system status, demo seed coverage and global tenant search.
 
 ## Fiscal Scope
 
@@ -50,6 +51,7 @@ npm run e2e
 - Customer records are recipient records used for immutable invoice snapshots.
 - Issued invoices can generate a local PDF, receive manual payments, create corrective drafts or be cancelled locally.
 - Audit events and evidence exports are local/preprod traceability tools.
+- Company summary, invoice timeline, company timeline, local hashes and CSV exports are operational review tools.
 - E-invoice generation is local and only available after invoice issue.
 - SIF/Verifactu registration is local and only available after invoice issue.
 - No production certificate, real AEAT dispatch, legal certification or external provider is used.
@@ -57,3 +59,10 @@ npm run e2e
 ## Configuration
 
 Environment variable names and purposes are documented in `docs/configuration.md`. Real `.env` files, templates, secrets and credentials must not be committed.
+
+## Smoke, Backup And Rollback
+
+- `scripts/preprod-smoke.ps1` checks `/healthz`, `/api/health` and can run Playwright preprod.
+- `scripts/backup-compose-preprod.ps1` creates Docker Compose MySQL and artifact backups under ignored `backups/`.
+- `scripts/preprod-compose-snapshot.ps1` tags current Docker Compose app images as a rollback reference.
+- `scripts/preprod-compose-rollback.ps1` restores those image tags and reruns smoke checks when explicitly confirmed.

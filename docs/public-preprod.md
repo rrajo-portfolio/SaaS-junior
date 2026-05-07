@@ -32,6 +32,9 @@ Required before sharing a link:
 - Health and smoke-test evidence after deployment.
 - Backup and restore procedure for MySQL volume/data.
 - Rollback target: previous Git commit or image tag.
+- Secret source outside Git.
+- Demo-only data policy.
+- Smoke-test mode selected and repeatable.
 
 ## Readiness Command
 
@@ -42,6 +45,30 @@ Run the public readiness gate before sharing any URL:
 ```
 
 The command must return `READY_FOR_PUBLIC_PREPROD`. Any `FIX_REQUIRED`, `BLOCKED_BY_EXTERNAL_INFRASTRUCTURE` or `BLOCKED_BY_LOCAL_ENVIRONMENT` result blocks sharing the link.
+
+Run smoke checks after every shared-preprod deploy:
+
+```powershell
+.\scripts\preprod-smoke.ps1 -BaseUrl "https://public-preprod-host"
+```
+
+For Docker Compose preproduction, create a rollback snapshot before deploy:
+
+```powershell
+.\scripts\preprod-compose-snapshot.ps1 -RollbackRef "preprod-before-change"
+```
+
+Create local/preprod backups before sharing or deploying:
+
+```powershell
+.\scripts\backup-compose-preprod.ps1
+```
+
+Rollback requires an explicit confirmation switch:
+
+```powershell
+.\scripts\preprod-compose-rollback.ps1 -RollbackRef "preprod-before-change" -ConfirmRollback
+```
 
 ## Safe Publication Options
 
