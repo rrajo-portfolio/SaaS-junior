@@ -1,6 +1,8 @@
 param(
   [string]$BaseUrl = $env:PREPROD_PUBLIC_ORIGIN,
-  [switch]$SkipPlaywright
+  [switch]$SkipPlaywright,
+  [string]$BasicAuthUser = $env:PUBLIC_DEMO_BASIC_AUTH_USER,
+  [string]$BasicAuthPassword = $env:PUBLIC_DEMO_BASIC_AUTH_PASSWORD
 )
 
 $ErrorActionPreference = "Stop"
@@ -11,6 +13,12 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
 
 $BaseUrl = $BaseUrl.TrimEnd("/")
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$headers = @{}
+
+if (-not [string]::IsNullOrWhiteSpace($BasicAuthUser) -and -not [string]::IsNullOrWhiteSpace($BasicAuthPassword)) {
+  $bytes = [System.Text.Encoding]::UTF8.GetBytes("${BasicAuthUser}:${BasicAuthPassword}")
+  $headers.Authorization = "Basic $([Convert]::ToBase64String($bytes))"
+}
 
 function Test-HttpEndpoint {
   param(
@@ -19,7 +27,7 @@ function Test-HttpEndpoint {
   )
 
   try {
-    $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 20
+    $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -Headers $headers -TimeoutSec 20
     if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
       Write-Output "FIX_REQUIRED $Name status=$($response.StatusCode)"
       exit 1
