@@ -54,6 +54,9 @@ services:
         VITE_OIDC_REDIRECT_URI: ${VITE_OIDC_REDIRECT_URI:-http://127.0.0.1:18080}
         VITE_OIDC_POST_LOGOUT_REDIRECT_URI: ${VITE_OIDC_POST_LOGOUT_REDIRECT_URI:-http://127.0.0.1:18080}
         VITE_OIDC_SCOPE: ${VITE_OIDC_SCOPE:-openid profile email}
+        VITE_APP_ENV: ${VITE_APP_ENV:-LOCAL_PREPROD}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-local-build}
+        VITE_LAST_SMOKE_TEST_AT: ${VITE_LAST_SMOKE_TEST_AT:-not-recorded}
     depends_on:
       backend:
         condition: service_healthy

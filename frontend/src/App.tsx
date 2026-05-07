@@ -2,16 +2,24 @@ import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from '
 import {
   Activity,
   AlertTriangle,
+  BarChart3,
+  Bell,
   Building2,
   CheckCircle2,
+  ClipboardList,
+  Clock3,
   Download,
   FileCheck2,
+  FileSpreadsheet,
   FileText,
   Files,
   Fingerprint,
   Gauge,
+  History,
+  KeyRound,
   LockKeyhole,
   Network,
+  Palette,
   Plus,
   RefreshCcw,
   Save,
@@ -370,6 +378,9 @@ type HealthState =
 const apiRoot = (import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080/api').replace(/\/$/, '')
 const demoUserEmail = 'ana.admin@fiscalsaas.local'
 const authMode = String(import.meta.env.VITE_LOGIN_MODE ?? import.meta.env.VITE_AUTH_MODE ?? 'demo').toLowerCase()
+const appEnvironment = String(import.meta.env.VITE_APP_ENV ?? 'LOCAL_PREPROD').toUpperCase()
+const appVersion = String(import.meta.env.VITE_APP_VERSION ?? 'local-dev')
+const lastSmokeTestAt = String(import.meta.env.VITE_LAST_SMOKE_TEST_AT ?? 'pendiente en runtime')
 const oidcEnabled = authMode === 'oidc'
 const oidcManager = oidcEnabled
   ? new UserManager({
@@ -380,8 +391,33 @@ const oidcManager = oidcEnabled
       response_type: 'code',
       scope: import.meta.env.VITE_OIDC_SCOPE ?? 'openid profile email',
       userStore: new WebStorageStateStore({ store: window.sessionStorage }),
-    })
+  })
   : null
+
+const roleCapabilities: Record<string, string[]> = {
+  platform_admin: ['Administra plataforma', 'Gestiona tenants', 'Audita evidencias'],
+  tenant_admin: ['Gestiona usuarios tenant', 'Configura empresas', 'Revisa evidencias'],
+  fiscal_manager: ['Configura fiscalidad', 'Emite facturas', 'Genera SIF/e-invoice local'],
+  accountant: ['Crea facturas', 'Registra cobros', 'Consulta documentos'],
+  client_user: ['Consulta facturas propias', 'Descarga documentos autorizados'],
+  auditor: ['Solo lectura', 'Revisa auditoria', 'Exporta evidencias'],
+  readonly: ['Solo lectura', 'Sin operaciones de escritura'],
+}
+
+const roleBoundaries = [
+  'Operaciones fiscales: borradores, emision, pagos, correctivas y anulacion local.',
+  'Configuracion: datos fiscales, series, clientes y tenant activo.',
+  'Evidencias: hashes, auditoria, PDF local, e-invoice local y SIF local.',
+]
+
+const demoDataContract = [
+  'Tenant demo',
+  'Empresa demo',
+  'Clientes demo',
+  'Facturas demo',
+  'Pagos demo',
+  'Evidencias demo',
+]
 
 const initialCompanyForm: CompanyFormState = {
   legalName: '',
@@ -504,10 +540,16 @@ function App() {
   const [fiscalSettingsForm, setFiscalSettingsForm] = useState<FiscalSettingsFormState>(initialFiscalSettingsForm)
   const [seriesForm, setSeriesForm] = useState<SeriesFormState>(initialSeriesForm)
   const [paymentAmount, setPaymentAmount] = useState('')
+  const [invoicePdfHashes, setInvoicePdfHashes] = useState<Record<string, string>>({})
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null)
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>('')
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState('')
   const [invoiceSearch, setInvoiceSearch] = useState('')
+  const [customerSearch, setCustomerSearch] = useState('')
+  const [documentSearch, setDocumentSearch] = useState('')
+  const [auditSearch, setAuditSearch] = useState('')
+  const [paymentSearch, setPaymentSearch] = useState('')
+  const [globalSearch, setGlobalSearch] = useState('')
   const [isTenantDataLoading, setIsTenantDataLoading] = useState(false)
   const [isSubmittingCompany, setIsSubmittingCompany] = useState(false)
   const [isUploadingDocument, setIsUploadingDocument] = useState(false)
@@ -535,24 +577,58 @@ function App() {
     () => companies.find((company) => company.relationshipType === 'OWNER') ?? companies[0],
     [companies],
   )
+  const companyAllInvoices = useMemo(
+    () => invoices.filter((invoice) => (
+      invoice.issuerCompany.id === selectedCompany?.id || invoice.customerCompany.id === selectedCompany?.id
+    )),
+    [invoices, selectedCompany],
+  )
   const companyDocuments = useMemo(
     () => documents.filter((document) => document.company.id === selectedCompany?.id),
     [documents, selectedCompany],
   )
+  const filteredCompanyDocuments = useMemo(() => {
+    const text = documentSearch.trim().toLowerCase()
+    return companyDocuments.filter((document) => (
+      !text ||
+      document.title.toLowerCase().includes(text) ||
+      document.latestFilename.toLowerCase().includes(text) ||
+      document.documentType.toLowerCase().includes(text) ||
+      document.latestSha256.toLowerCase().includes(text)
+    ))
+  }, [companyDocuments, documentSearch])
+  const filteredCustomers = useMemo(() => {
+    const text = customerSearch.trim().toLowerCase()
+    return customers.filter((customer) => (
+      !text ||
+      customer.name.toLowerCase().includes(text) ||
+      customer.nif.toLowerCase().includes(text) ||
+      (customer.email ?? '').toLowerCase().includes(text)
+    ))
+  }, [customers, customerSearch])
+  const filteredAuditEvents = useMemo(() => {
+    const text = auditSearch.trim().toLowerCase()
+    return auditEvents.filter((event) => (
+      !text ||
+      event.eventType.toLowerCase().includes(text) ||
+      event.actorEmail.toLowerCase().includes(text) ||
+      event.entityType.toLowerCase().includes(text) ||
+      (event.details ?? '').toLowerCase().includes(text) ||
+      (event.eventHash ?? '').toLowerCase().includes(text)
+    ))
+  }, [auditEvents, auditSearch])
   const companyInvoices = useMemo(() => {
     const text = invoiceSearch.trim().toLowerCase()
-    return invoices
-      .filter((invoice) => (
-        invoice.issuerCompany.id === selectedCompany?.id || invoice.customerCompany.id === selectedCompany?.id
-      ))
+    return companyAllInvoices
       .filter((invoice) => !invoiceStatusFilter || invoice.status === invoiceStatusFilter)
       .filter((invoice) => (
         !text ||
         invoice.invoiceNumber.toLowerCase().includes(text) ||
+        (invoice.fiscalNumber ?? '').toLowerCase().includes(text) ||
         invoice.issuerCompany.legalName.toLowerCase().includes(text) ||
         invoice.customerCompany.legalName.toLowerCase().includes(text)
       ))
-  }, [invoices, invoiceSearch, invoiceStatusFilter, selectedCompany])
+  }, [companyAllInvoices, invoiceSearch, invoiceStatusFilter])
   const selectedInvoice = useMemo(
     () => companyInvoices.find((invoice) => invoice.id === selectedInvoiceId) ?? companyInvoices[0],
     [companyInvoices, selectedInvoiceId],
@@ -565,6 +641,17 @@ function App() {
     () => sifRecords.find((record) => record.invoiceId === selectedInvoice?.id && record.recordType === 'REGISTRATION'),
     [selectedInvoice, sifRecords],
   )
+  const filteredInvoicePayments = useMemo(() => {
+    const text = paymentSearch.trim().toLowerCase()
+    return invoicePayments.filter((payment) => (
+      !text ||
+      payment.paymentDate.toLowerCase().includes(text) ||
+      payment.method.toLowerCase().includes(text) ||
+      (payment.reference ?? '').toLowerCase().includes(text) ||
+      (payment.notes ?? '').toLowerCase().includes(text) ||
+      String(payment.amount).includes(text)
+    ))
+  }, [invoicePayments, paymentSearch])
   const invoiceTotals = useMemo(() => {
     return invoiceForm.lines.reduce(
       (totals, line) => {
@@ -587,6 +674,135 @@ function App() {
       { base: 0, tax: 0, withholding: 0, total: 0 },
     )
   }, [invoiceForm.lines])
+  const effectiveRoles = useMemo(() => {
+    const roles = new Set<string>(me?.user.roles ?? [])
+    if (activeTenant?.role) {
+      roles.add(activeTenant.role)
+    }
+    if (roles.size === 0) {
+      roles.add('readonly')
+    }
+    return Array.from(roles)
+  }, [activeTenant, me])
+  const effectiveCapabilities = useMemo(() => (
+    Array.from(new Set(effectiveRoles.flatMap((role) => roleCapabilities[role] ?? [formatRole(role)])))
+  ), [effectiveRoles])
+  const companySummary = useMemo(() => {
+    const issued = companyAllInvoices.filter((invoice) => invoice.status === 'ISSUED')
+    const drafts = companyAllInvoices.filter((invoice) => invoice.status === 'DRAFT')
+    const cancelled = companyAllInvoices.filter((invoice) => invoice.status === 'CANCELLED_LOCAL')
+    const rectified = companyAllInvoices.filter((invoice) => invoice.status === 'RECTIFIED')
+    const paidTotal = companyAllInvoices.reduce((total, invoice) => total + Number(invoice.paidAmount ?? 0), 0)
+    const outstandingTotal = companyAllInvoices.reduce(
+      (total, invoice) => total + Number(invoice.outstandingAmount ?? (invoice.status === 'ISSUED' ? invoice.total : 0)),
+      0,
+    )
+    return {
+      issuedCount: issued.length,
+      draftCount: drafts.length,
+      cancelledCount: cancelled.length,
+      rectifiedCount: rectified.length,
+      paidTotal,
+      outstandingTotal,
+      latestAudit: auditEvents[0],
+    }
+  }, [auditEvents, companyAllInvoices])
+  const invoiceStatusBuckets = useMemo(() => {
+    const buckets = ['DRAFT', 'ISSUED', 'RECTIFIED', 'CANCELLED_LOCAL'].map((status) => ({
+      status,
+      count: companyAllInvoices.filter((invoice) => invoice.status === status).length,
+    }))
+    const maxCount = Math.max(1, ...buckets.map((bucket) => bucket.count))
+    return buckets.map((bucket) => ({ ...bucket, percent: Math.max(8, Math.round((bucket.count / maxCount) * 100)) }))
+  }, [companyAllInvoices])
+  const demoSeedStatus = useMemo(() => ([
+    { label: 'Tenant demo', ready: tenants.length > 0, detail: activeTenant?.name ?? 'Pendiente' },
+    { label: 'Empresa demo', ready: companies.length > 0, detail: `${companies.length} cargadas` },
+    { label: 'Clientes demo', ready: customers.length > 0, detail: `${customers.length} clientes` },
+    { label: 'Facturas demo', ready: invoices.length > 0, detail: `${invoices.length} facturas` },
+    { label: 'Pagos demo', ready: invoicePayments.length > 0 || invoices.some((invoice) => Number(invoice.paidAmount ?? 0) > 0), detail: 'manuales/preprod' },
+    { label: 'Evidencias demo', ready: auditEvents.length > 0 || evidenceExports.length > 0, detail: `${auditEvents.length + evidenceExports.length} registros` },
+  ]), [activeTenant, auditEvents, companies, customers, evidenceExports, invoicePayments, invoices, tenants])
+  const systemStatusItems = useMemo(() => ([
+    { label: 'Frontend', value: 'Cargado', tone: 'success' },
+    { label: 'Backend', value: health.label, tone: health.tone },
+    { label: 'MySQL', value: health.tone === 'success' ? 'Validado por backend' : 'Pendiente', tone: health.tone },
+    { label: 'Nginx', value: window.location.port === '8080' || window.location.port === '18080' ? 'Proxy activo' : 'Directo/dev', tone: window.location.port === '8080' || window.location.port === '18080' ? 'success' : 'warning' },
+  ]), [health])
+  const operatorNotifications = useMemo(() => {
+    const messages: string[] = []
+    if (!fiscalSettings) {
+      messages.push('Completar fiscalidad antes de emitir facturas reales de prueba.')
+    }
+    if (!invoiceSeries.some((series) => series.active)) {
+      messages.push('Crear una serie activa antes de emitir.')
+    }
+    if (customers.length === 0) {
+      messages.push('Crear al menos un destinatario antes de validar el flujo completo.')
+    }
+    if (companySummary.outstandingTotal > 0) {
+      messages.push(`Hay ${formatCurrency(companySummary.outstandingTotal)} pendiente de cobro.`)
+    }
+    if (appEnvironment.includes('PREPROD') && !oidcEnabled) {
+      messages.push('Demo header auth solo sirve para preproduccion local, no para enlace publico.')
+    }
+    return messages
+  }, [companySummary.outstandingTotal, customers, fiscalSettings, invoiceSeries])
+  const selectedInvoiceTimeline = useMemo(() => {
+    if (!selectedInvoice) {
+      return []
+    }
+    const events = [
+      { at: selectedInvoice.issueDate, label: 'Borrador creado', detail: selectedInvoice.invoiceNumber },
+    ]
+    if (selectedInvoice.issuedAt || selectedInvoice.fiscalNumber) {
+      events.push({ at: selectedInvoice.issuedAt ?? selectedInvoice.issueDate, label: 'Emitida localmente', detail: selectedInvoice.fiscalNumber ?? selectedInvoice.status })
+    }
+    invoicePayments.forEach((payment) => {
+      events.push({ at: payment.paymentDate, label: 'Pago registrado', detail: `${formatCurrency(Number(payment.amount), selectedInvoice.currency)} ${payment.method}` })
+    })
+    if (selectedInvoiceEinvoice) {
+      events.push({ at: selectedInvoiceEinvoice.createdAt, label: 'E-invoice local', detail: selectedInvoiceEinvoice.payloadSha256.slice(0, 16) })
+    }
+    if (selectedInvoiceSif) {
+      events.push({ at: selectedInvoiceSif.createdAt, label: 'SIF local', detail: selectedInvoiceSif.recordHash.slice(0, 16) })
+    }
+    return events.sort((a, b) => String(a.at).localeCompare(String(b.at)))
+  }, [invoicePayments, selectedInvoice, selectedInvoiceEinvoice, selectedInvoiceSif])
+  const companyTimeline = useMemo(() => (
+    [
+      ...filteredAuditEvents.slice(0, 6).map((event) => ({
+        at: event.occurredAt,
+        label: event.eventType,
+        detail: `${event.actorEmail} - ${(event.eventHash ?? 'sin-hash').slice(0, 16)}`,
+      })),
+      ...companyDocuments.slice(0, 3).map((document) => ({
+        at: document.updatedAt,
+        label: `Documento ${formatDocumentType(document.documentType)}`,
+        detail: `${document.title} - ${document.latestSha256.slice(0, 16)}`,
+      })),
+    ].sort((a, b) => String(b.at).localeCompare(String(a.at)))
+  ), [companyDocuments, filteredAuditEvents])
+  const globalSearchResults = useMemo(() => {
+    const text = globalSearch.trim().toLowerCase()
+    if (!text) {
+      return []
+    }
+    return [
+      ...companies
+        .filter((company) => company.legalName.toLowerCase().includes(text) || company.taxId.toLowerCase().includes(text))
+        .map((company) => ({ type: 'Empresa', label: company.legalName, detail: company.taxId })),
+      ...customers
+        .filter((customer) => customer.name.toLowerCase().includes(text) || customer.nif.toLowerCase().includes(text))
+        .map((customer) => ({ type: 'Cliente', label: customer.name, detail: customer.nif })),
+      ...invoices
+        .filter((invoice) => invoice.invoiceNumber.toLowerCase().includes(text) || (invoice.fiscalNumber ?? '').toLowerCase().includes(text))
+        .map((invoice) => ({ type: 'Factura', label: invoice.fiscalNumber ?? invoice.invoiceNumber, detail: invoice.status })),
+      ...documents
+        .filter((document) => document.title.toLowerCase().includes(text) || document.latestSha256.toLowerCase().includes(text))
+        .map((document) => ({ type: 'Documento', label: document.title, detail: document.latestFilename })),
+    ].slice(0, 8)
+  }, [companies, customers, documents, globalSearch, invoices])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -1260,6 +1476,10 @@ function App() {
       setInvoiceMutationMessage('PDF disponible solo tras emitir')
       return
     }
+    const pdfHash = response.headers.get('X-Content-SHA256')
+    if (pdfHash) {
+      setInvoicePdfHashes((current) => ({ ...current, [invoice.id]: pdfHash }))
+    }
     const blob = await response.blob()
     const href = URL.createObjectURL(blob)
     const link = window.document.createElement('a')
@@ -1436,6 +1656,42 @@ function App() {
     }))
   }
 
+  function exportInvoicesCsv() {
+    downloadCsv(`facturas-${selectedCompany?.id ?? 'tenant'}.csv`, companyAllInvoices.map((invoice) => ({
+      invoiceNumber: invoice.invoiceNumber,
+      fiscalNumber: invoice.fiscalNumber ?? '',
+      issuer: invoice.issuerCompany.legalName,
+      customer: invoice.customerCompany.legalName,
+      status: invoice.status,
+      paymentStatus: invoice.paymentStatus ?? 'UNPAID',
+      total: invoice.payableTotal ?? invoice.total,
+      paidAmount: invoice.paidAmount ?? 0,
+      outstandingAmount: invoice.outstandingAmount ?? 0,
+      issueDate: invoice.issueDate,
+    })))
+  }
+
+  function exportCustomersCsv() {
+    downloadCsv(`clientes-${selectedCompany?.id ?? 'empresa'}.csv`, customers.map((customer) => ({
+      name: customer.name,
+      nif: customer.nif,
+      email: customer.email ?? '',
+      city: customer.city,
+      status: customer.status,
+    })))
+  }
+
+  function exportEvidenceCsv() {
+    downloadCsv(`auditoria-${selectedCompany?.id ?? 'empresa'}.csv`, auditEvents.map((event) => ({
+      occurredAt: event.occurredAt,
+      actorEmail: event.actorEmail,
+      eventType: event.eventType,
+      entityType: event.entityType,
+      entityId: event.entityId,
+      eventHash: event.eventHash ?? '',
+    })))
+  }
+
   async function loginWithOidc() {
     await oidcManager?.signinRedirect()
   }
@@ -1576,6 +1832,11 @@ function App() {
             <h2>{displayUserName}</h2>
             <span>{displayUserEmail}</span>
             <small>{oidcEnabled ? 'OIDC' : 'Demo header auth'}</small>
+            <div className="tenant-brand-preview" aria-label="Branding configurable por tenant">
+              <Palette size={16} />
+              <strong>{tenantInitials(activeTenant?.name ?? 'FS')}</strong>
+              <span>{activeTenant?.name ?? 'Tenant pendiente'}</span>
+            </div>
           </div>
           <div className="tenant-switcher" role="tablist" aria-label="Tenant activo">
             {tenants.map((tenant) => (
@@ -1612,6 +1873,103 @@ function App() {
             Sincronizando datos del tenant
           </div>
         ) : null}
+
+        <section className="preprod-readiness-grid" aria-label="Control de preproduccion">
+          <article className="readiness-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Roles y permisos</p>
+                <h3>Separacion operativa</h3>
+              </div>
+              <KeyRound size={18} />
+            </div>
+            <div className="chip-row">
+              {effectiveRoles.map((role) => (
+                <span className="badge success" key={role}>{formatRole(role)}</span>
+              ))}
+            </div>
+            <ul className="compact-list">
+              {effectiveCapabilities.slice(0, 5).map((capability) => (
+                <li key={capability}>{capability}</li>
+              ))}
+            </ul>
+            <div className="boundary-list">
+              {roleBoundaries.map((boundary) => (
+                <small key={boundary}>{boundary}</small>
+              ))}
+            </div>
+          </article>
+
+          <article className="readiness-card" role="region" aria-label="Estado del sistema">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Estado del sistema</p>
+                <h3>{appEnvironment}</h3>
+              </div>
+              <Server size={18} />
+            </div>
+            <div className="status-mini-grid">
+              {systemStatusItems.map((item) => (
+                <div key={item.label}>
+                  <span>{item.label}</span>
+                  <strong className={`badge ${item.tone}`}>{item.value}</strong>
+                </div>
+              ))}
+            </div>
+            <small>Version {appVersion}. Auth {oidcEnabled ? 'OIDC' : 'demo local'}. Ultimo smoke: {lastSmokeTestAt}.</small>
+          </article>
+
+          <article className="readiness-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Datos demo controlados</p>
+                <h3>Sin datos reales</h3>
+              </div>
+              <ClipboardList size={18} />
+            </div>
+            <div className="seed-grid">
+              {demoSeedStatus.map((item) => (
+                <div className={item.ready ? 'seed-item ready' : 'seed-item pending'} key={item.label}>
+                  <CheckCircle2 size={16} />
+                  <span>{item.label}</span>
+                  <small>{item.detail}</small>
+                </div>
+              ))}
+            </div>
+            <small>{demoDataContract.join(', ')}.</small>
+          </article>
+
+          <article className="readiness-card">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Buscador global</p>
+                <h3>Tenant cargado</h3>
+              </div>
+              <Search size={18} />
+            </div>
+            <label className="search-box global-search">
+              <Search size={16} />
+              <input
+                aria-label="Buscar en tenant"
+                onChange={(event) => setGlobalSearch(event.target.value)}
+                placeholder="Empresa, cliente, factura, hash"
+                type="search"
+                value={globalSearch}
+              />
+            </label>
+            <div className="global-result-list">
+              {globalSearchResults.length === 0 ? (
+                <small>{globalSearch.trim() ? 'Sin resultados' : 'Introduce un criterio'}</small>
+              ) : globalSearchResults.map((result) => (
+                <button className="result-row" key={`${result.type}-${result.label}-${result.detail}`} type="button">
+                  <span>{result.type}</span>
+                  <strong>{result.label}</strong>
+                  <small>{result.detail}</small>
+                </button>
+              ))}
+            </div>
+          </article>
+        </section>
 
         <section className="metrics-grid" aria-label="Resumen SaaS">
           <MetricCard icon={Building2} label="Empresas" value={companies.length.toString()} trend={selectedCompany?.legalName ?? 'Sin empresa'} />
@@ -1720,6 +2078,62 @@ function App() {
                   </div>
                 </form>
 
+                <section className="company-summary-panel" aria-label="Resumen operativo de empresa">
+                  <div className="section-heading">
+                    <div>
+                      <p className="eyebrow">Resumen operativo de empresa</p>
+                      <h3>Actividad fiscal y cobros</h3>
+                    </div>
+                    <BarChart3 size={18} />
+                    <button className="ghost-button compact" onClick={exportInvoicesCsv} type="button">
+                      <FileSpreadsheet size={16} />
+                      Exportar CSV
+                    </button>
+                  </div>
+                  <div className="company-summary-grid">
+                    <div>
+                      <span>Emitidas</span>
+                      <strong>{companySummary.issuedCount}</strong>
+                    </div>
+                    <div>
+                      <span>Borradores</span>
+                      <strong>{companySummary.draftCount}</strong>
+                    </div>
+                    <div>
+                      <span>Cobrado</span>
+                      <strong>{formatCurrency(companySummary.paidTotal)}</strong>
+                    </div>
+                    <div>
+                      <span>Pendiente</span>
+                      <strong>{formatCurrency(companySummary.outstandingTotal)}</strong>
+                    </div>
+                  </div>
+                  <div className="status-chart" aria-label="Dashboard grafico de facturas">
+                    {invoiceStatusBuckets.map((bucket) => (
+                      <div className="chart-row" key={bucket.status}>
+                        <span>{bucket.status}</span>
+                        <div>
+                          <i style={{ width: `${bucket.percent}%` }} />
+                        </div>
+                        <strong>{bucket.count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="notification-list" aria-label="Notificaciones internas">
+                    <div className="section-heading compact-heading">
+                      <h3><Bell size={16} /> Notificaciones internas</h3>
+                    </div>
+                    {operatorNotifications.length === 0 ? (
+                      <small>Sin avisos operativos para esta empresa.</small>
+                    ) : operatorNotifications.map((message) => (
+                      <small key={message}>{message}</small>
+                    ))}
+                  </div>
+                  {companySummary.latestAudit ? (
+                    <small>Ultimo evento: {companySummary.latestAudit.eventType} - {(companySummary.latestAudit.eventHash ?? 'sin-hash').slice(0, 16)}</small>
+                  ) : null}
+                </section>
+
                 <section className="fiscal-config-panel" aria-label="Configuracion fiscal de empresa">
                   <div className="section-heading">
                     <div>
@@ -1740,6 +2154,19 @@ function App() {
                       <TextInput label="Codigo postal" onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, postalCode: value }))} value={fiscalSettingsForm.postalCode} />
                       <TextInput label="Moneda" maxLength={3} onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, defaultCurrency: value.toUpperCase() }))} value={fiscalSettingsForm.defaultCurrency} />
                       <TextInput label="Dias pago" onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, defaultPaymentTermsDays: value }))} type="number" value={fiscalSettingsForm.defaultPaymentTermsDays} />
+                      <TextInput label="IVA por defecto" onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, defaultVatRate: value }))} type="number" value={fiscalSettingsForm.defaultVatRate} />
+                      <SelectInput
+                        label="Plantilla PDF"
+                        onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, pdfTemplate: value }))}
+                        options={['standard', 'compact', 'detailed']}
+                        value={fiscalSettingsForm.pdfTemplate}
+                      />
+                      <SelectInput
+                        label="Modo SIF"
+                        onChange={(value) => setFiscalSettingsForm((current) => ({ ...current, sifMode: value }))}
+                        options={['LOCAL_ONLY', 'STUB_PREPROD']}
+                        value={fiscalSettingsForm.sifMode}
+                      />
                     </div>
                     <div className="button-row">
                       <button className="primary-button compact" type="submit">
@@ -1770,7 +2197,16 @@ function App() {
                       <p className="eyebrow">Clientes</p>
                       <h3>Destinatarios con snapshot de factura</h3>
                     </div>
-                    <span>{customers.length} clientes</span>
+                    <div className="button-row">
+                      <label className="search-box inline-search">
+                        <Search size={16} />
+                        <input aria-label="Buscar cliente" onChange={(event) => setCustomerSearch(event.target.value)} placeholder="Cliente, NIF o email" type="search" value={customerSearch} />
+                      </label>
+                      <button className="ghost-button compact" onClick={exportCustomersCsv} type="button">
+                        <FileSpreadsheet size={16} />
+                        CSV
+                      </button>
+                    </div>
                   </div>
                   <form className="customer-form" onSubmit={createCustomer}>
                     <TextInput label="Cliente" onChange={(value) => setCustomerForm((current) => ({ ...current, name: value }))} value={customerForm.name} />
@@ -1785,7 +2221,7 @@ function App() {
                     </button>
                   </form>
                   <div className="chip-row">
-                    {customers.map((customer) => (
+                    {filteredCustomers.map((customer) => (
                       <button
                         className={invoiceForm.customerId === customer.id ? 'chip selected' : 'chip'}
                         key={customer.id}
@@ -1795,6 +2231,7 @@ function App() {
                         {customer.name} - {customer.nif}
                       </button>
                     ))}
+                    {filteredCustomers.length === 0 ? <span className="empty-inline">Sin clientes para este filtro</span> : null}
                   </div>
                   {customerMutationMessage ? <p className="form-message">{customerMutationMessage}</p> : null}
                 </section>
@@ -1813,8 +2250,12 @@ function App() {
                       <p className="eyebrow">Documentos</p>
                       <h3>Archivos asociados a la empresa</h3>
                     </div>
-                    <span>Subir documento no crea una factura fiscal</span>
+                    <label className="search-box inline-search">
+                      <Search size={16} />
+                      <input aria-label="Buscar documento" onChange={(event) => setDocumentSearch(event.target.value)} placeholder="Titulo, tipo o hash" type="search" value={documentSearch} />
+                    </label>
                   </div>
+                  <p className="form-message">Subir documento no crea una factura fiscal.</p>
 
                   <form className="document-upload" onSubmit={uploadDocument}>
                     <TextInput label="Titulo" onChange={(value) => setDocumentForm((current) => ({ ...current, title: value }))} value={documentForm.title} />
@@ -1836,9 +2277,9 @@ function App() {
                   {documentMutationMessage ? <p className="form-message">{documentMutationMessage}</p> : null}
 
                   <div className="document-list">
-                    {companyDocuments.length === 0 ? (
+                    {filteredCompanyDocuments.length === 0 ? (
                       <div className="empty-state">No hay documentos en esta empresa</div>
-                    ) : companyDocuments.map((document) => (
+                    ) : filteredCompanyDocuments.map((document) => (
                       <div className="document-row" key={document.id}>
                         <span>
                           <strong>{document.title}</strong>
@@ -1921,9 +2362,53 @@ function App() {
                       <button className="primary-button compact" disabled={selectedInvoice.status !== 'ISSUED'} onClick={() => void registerPayment(selectedInvoice)} type="button">
                         Registrar pago
                       </button>
+                      <label className="search-box inline-search">
+                        <Search size={16} />
+                        <input aria-label="Buscar pago" onChange={(event) => setPaymentSearch(event.target.value)} placeholder="Fecha, metodo, importe" type="search" value={paymentSearch} />
+                      </label>
                       <div className="payment-list">
-                        {invoicePayments.map((payment) => (
+                        {filteredInvoicePayments.map((payment) => (
                           <small key={payment.id}>{payment.paymentDate}: {formatCurrency(Number(payment.amount), selectedInvoice.currency)} {payment.method}</small>
+                        ))}
+                        {filteredInvoicePayments.length === 0 ? <small>Sin pagos para este filtro</small> : null}
+                      </div>
+                      <div className="traceability-card">
+                        <div>
+                          <span>Numero fiscal</span>
+                          <code>{selectedInvoice.fiscalNumber ?? 'Pendiente de emision'}</code>
+                        </div>
+                        <div>
+                          <span>PDF hash</span>
+                          <code>{invoicePdfHashes[selectedInvoice.id]?.slice(0, 24) ?? 'Genera PDF para capturarlo'}</code>
+                        </div>
+                        <div>
+                          <span>E-invoice hash</span>
+                          <code>{selectedInvoiceEinvoice?.payloadSha256.slice(0, 24) ?? 'Sin e-invoice local'}</code>
+                        </div>
+                        <div>
+                          <span>SIF hash</span>
+                          <code>{selectedInvoiceSif?.recordHash.slice(0, 24) ?? 'Sin SIF local'}</code>
+                        </div>
+                        <div>
+                          <span>Snapshot emisor</span>
+                          <code>{selectedInvoice.issuerFiscalSnapshot ? 'Congelado' : 'Pendiente'}</code>
+                        </div>
+                        <div>
+                          <span>Snapshot totales</span>
+                          <code>{selectedInvoice.totalsSnapshot ? 'Congelado' : 'Pendiente'}</code>
+                        </div>
+                      </div>
+                      <div className="timeline-panel" role="region" aria-label="Timeline de factura">
+                        <div className="section-heading compact-heading">
+                          <h3><History size={16} /> Timeline de factura</h3>
+                        </div>
+                        {selectedInvoiceTimeline.map((event) => (
+                          <div className="timeline-row" key={`${event.label}-${event.at}-${event.detail}`}>
+                            <Clock3 size={15} />
+                            <span>{event.at}</span>
+                            <strong>{event.label}</strong>
+                            <small>{event.detail}</small>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -2051,8 +2536,9 @@ function App() {
                     {selectedInvoiceEinvoice ? (
                       <div className="evidence-card">
                         <strong>{selectedInvoiceEinvoice.exchangeStatus}</strong>
-                        <span>{selectedInvoiceEinvoice.syntax} - {selectedInvoiceEinvoice.commercialStatus}</span>
-                        <code>{selectedInvoiceEinvoice.payloadSha256.slice(0, 24)}</code>
+                        <span>LOCAL STUB - {selectedInvoiceEinvoice.syntax} - {selectedInvoiceEinvoice.commercialStatus}</span>
+                        <small>Artifact ID {selectedInvoiceEinvoice.id}</small>
+                        <code>Hash {selectedInvoiceEinvoice.payloadSha256.slice(0, 24)}</code>
                       </div>
                     ) : <div className="empty-state">Sin e-invoice para la factura seleccionada</div>}
                   </section>
@@ -2077,8 +2563,9 @@ function App() {
                     {selectedInvoiceSif ? (
                       <div className="evidence-card">
                         <strong>Secuencia {selectedInvoiceSif.sequenceNumber}</strong>
-                        <span>{selectedInvoiceSif.recordType}</span>
-                        <code>{selectedInvoiceSif.recordHash.slice(0, 24)}</code>
+                        <span>LOCAL STUB - {selectedInvoiceSif.recordType}</span>
+                        <small>Artifact ID {selectedInvoiceSif.id}</small>
+                        <code>Hash {selectedInvoiceSif.recordHash.slice(0, 24)}</code>
                       </div>
                     ) : <div className="empty-state">Sin registro SIF para la factura seleccionada</div>}
                   </section>
@@ -2091,18 +2578,28 @@ function App() {
                       <p className="eyebrow">Evidencia</p>
                       <h3>Auditoria y portabilidad local/preprod</h3>
                     </div>
-                    <button className="primary-button compact" onClick={() => void createEvidenceExport()} type="button">
-                      <Download size={16} />
-                      Generar ZIP
-                    </button>
+                    <div className="button-row">
+                      <label className="search-box inline-search">
+                        <Search size={16} />
+                        <input aria-label="Buscar auditoria" onChange={(event) => setAuditSearch(event.target.value)} placeholder="Evento, actor o hash" type="search" value={auditSearch} />
+                      </label>
+                      <button className="ghost-button compact" onClick={exportEvidenceCsv} type="button">
+                        <FileSpreadsheet size={16} />
+                        CSV
+                      </button>
+                      <button className="primary-button compact" onClick={() => void createEvidenceExport()} type="button">
+                        <Download size={16} />
+                        Generar ZIP
+                      </button>
+                    </div>
                   </div>
                   <div className="evidence-grid">
                     <div className="evidence-card">
                       <strong>Eventos auditados</strong>
-                      {auditEvents.length === 0 ? (
+                      {filteredAuditEvents.length === 0 ? (
                         <span>Sin eventos todavia</span>
-                      ) : auditEvents.slice(0, 5).map((event) => (
-                        <small key={event.id}>{event.eventType} - {event.actorEmail} - {(event.eventHash ?? '').slice(0, 12)}</small>
+                      ) : filteredAuditEvents.slice(0, 5).map((event) => (
+                        <small key={event.id}>{event.eventType} - {event.actorEmail} - hash {(event.eventHash ?? '').slice(0, 16)}</small>
                       ))}
                     </div>
                     <div className="evidence-card">
@@ -2111,10 +2608,25 @@ function App() {
                         <span>Sin paquetes generados</span>
                       ) : evidenceExports.slice(0, 4).map((exportJob) => (
                         <button className="ghost-button compact" key={exportJob.id} onClick={() => void downloadEvidenceExport(exportJob)} type="button">
-                          {exportJob.status} - {(exportJob.sha256 ?? '').slice(0, 12)}
+                          {exportJob.status} - Artifact {exportJob.id.slice(0, 8)} - hash {(exportJob.sha256 ?? '').slice(0, 12)}
                         </button>
                       ))}
                     </div>
+                  </div>
+                  <div className="timeline-panel" role="region" aria-label="Timeline de empresa">
+                    <div className="section-heading compact-heading">
+                      <h3><History size={16} /> Timeline de empresa</h3>
+                    </div>
+                    {companyTimeline.length === 0 ? (
+                      <small>Sin eventos de empresa cargados.</small>
+                    ) : companyTimeline.map((event) => (
+                      <div className="timeline-row" key={`${event.label}-${event.at}-${event.detail}`}>
+                        <Clock3 size={15} />
+                        <span>{event.at}</span>
+                        <strong>{event.label}</strong>
+                        <small>{event.detail}</small>
+                      </div>
+                    ))}
                   </div>
                   {exportMutationMessage ? <p className="form-message">{exportMutationMessage}</p> : null}
                 </section>
@@ -2295,6 +2807,46 @@ function formatDocumentType(value: string) {
     EVIDENCE: 'Evidencia',
   }
   return map[value] ?? value
+}
+
+function tenantInitials(value: string) {
+  return value
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('') || 'FS'
+}
+
+function downloadCsv(filename: string, rows: Array<Record<string, string | number>>) {
+  if (rows.length === 0) {
+    downloadTextFile(filename, '', 'text/csv;charset=utf-8')
+    return
+  }
+  const headers = Object.keys(rows[0])
+  const csv = [
+    headers.join(','),
+    ...rows.map((row) => headers.map((header) => csvValue(row[header])).join(',')),
+  ].join('\n')
+  downloadTextFile(filename, csv, 'text/csv;charset=utf-8')
+}
+
+function csvValue(value: string | number) {
+  const text = String(value ?? '')
+  if (/[",\n\r]/.test(text)) {
+    return `"${text.replace(/"/g, '""')}"`
+  }
+  return text
+}
+
+function downloadTextFile(filename: string, contents: string, type: string) {
+  const blob = new Blob([contents], { type })
+  const href = URL.createObjectURL(blob)
+  const link = window.document.createElement('a')
+  link.href = href
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(href)
 }
 
 function badgeClass(value: string) {

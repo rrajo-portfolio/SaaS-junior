@@ -25,6 +25,9 @@ No `.env` file or `.env` template is stored in this repository.
 | `VITE_OIDC_REDIRECT_URI` | Frontend redirect URI for OIDC authorization code flow with PKCE. |
 | `VITE_OIDC_POST_LOGOUT_REDIRECT_URI` | Frontend URI used after OIDC logout. |
 | `VITE_OIDC_SCOPE` | OIDC scopes requested by the frontend. |
+| `VITE_APP_ENV` | Build-time label shown in the frontend system-status panel. |
+| `VITE_APP_VERSION` | Build-time version or image tag shown in the frontend system-status panel. |
+| `VITE_LAST_SMOKE_TEST_AT` | Build-time timestamp or marker for the latest preproduction smoke test. |
 | `VERIFACTU_MODE` | Verifactu adapter mode. Production must stay disabled until an explicit validated phase. |
 | `AEAT_PRODUCTION_ENABLED` | Guard flag for AEAT production usage. |
 | `APP_DOCUMENT_STORAGE_PATH` | Backend filesystem path for preproduction document binaries. |
@@ -43,6 +46,9 @@ No `.env` file or `.env` template is stored in this repository.
 | `PREPROD_AUTH_MODE` | Authentication gate for shared preproduction. Must be `oidc` before sharing externally. |
 | `PREPROD_BACKUP_MODE` | Backup evidence mode used before sharing preproduction. |
 | `PREPROD_ROLLBACK_REF` | Git commit, tag or image reference used as rollback target for shared preproduction. |
+| `PREPROD_SECRET_SOURCE` | External secret source used for shared preproduction. |
+| `PREPROD_DEMO_DATA_MODE` | Data policy for shared preproduction. Must indicate demo-only data. |
+| `PREPROD_SMOKE_TEST_MODE` | Smoke-test evidence mode for shared preproduction. |
 
 ## Local Setup
 

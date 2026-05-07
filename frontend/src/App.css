@@ -300,6 +300,30 @@ h3 {
   font-weight: 800;
 }
 
+.tenant-brand-preview {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 18px 42px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.tenant-brand-preview strong {
+  width: 42px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-primary-contrast);
+  font-size: 13px;
+}
+
 .tenant-switcher {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -355,6 +379,131 @@ h3 {
   border-radius: 8px;
   background: #eef4ff;
   color: #174ea6;
+  font-weight: 800;
+}
+
+.preprod-readiness-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.readiness-card {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+}
+
+.readiness-card > small,
+.boundary-list small,
+.global-result-list small,
+.notification-list small,
+.timeline-panel > small,
+.empty-inline {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.compact-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.compact-list li,
+.boundary-list small,
+.notification-list small {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.boundary-list,
+.global-result-list,
+.notification-list {
+  display: grid;
+  gap: 8px;
+}
+
+.status-mini-grid,
+.seed-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.status-mini-grid div,
+.seed-item {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.status-mini-grid span,
+.seed-item small,
+.seed-item span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.seed-item {
+  grid-template-columns: 18px 1fr;
+  align-items: center;
+}
+
+.seed-item svg {
+  color: var(--color-warning);
+}
+
+.seed-item.ready svg {
+  color: var(--color-success);
+}
+
+.seed-item small {
+  grid-column: 2;
+}
+
+.global-search {
+  width: 100%;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 4px 8px;
+  align-items: center;
+  min-height: 42px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.result-row span {
+  grid-row: span 2;
+  color: var(--color-primary);
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -1001,6 +1150,7 @@ h3 {
 
 .fiscal-config-panel,
 .customers-panel,
+.company-summary-panel,
 .evidence-ops-panel,
 .invoice-operations {
   display: grid;
@@ -1010,6 +1160,75 @@ h3 {
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface-muted);
+}
+
+.company-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.company-summary-grid div {
+  display: grid;
+  gap: 6px;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.company-summary-grid span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.company-summary-grid strong {
+  font-size: 20px;
+}
+
+.status-chart {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: center;
+}
+
+.chart-row span,
+.chart-row strong {
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chart-row div {
+  height: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+}
+
+.chart-row i {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--color-primary);
+}
+
+.compact-heading h3 {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .series-form,
@@ -1069,6 +1288,56 @@ h3 {
 .chip.selected {
   border-color: var(--color-primary);
   background: #eef4ff;
+  color: var(--color-primary);
+}
+
+.traceability-card,
+.timeline-panel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.traceability-card {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.traceability-card div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.traceability-card span,
+.traceability-card code,
+.timeline-row span,
+.timeline-row small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.traceability-card code {
+  color: var(--color-text);
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 18px minmax(120px, 0.65fr) minmax(140px, 0.8fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--color-surface-muted);
+}
+
+.timeline-row svg {
   color: var(--color-primary);
 }
 
@@ -1192,7 +1461,8 @@ h3 {
 
   .status-strip,
   .module-rail,
-  .metrics-grid {
+  .metrics-grid,
+  .preprod-readiness-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1220,6 +1490,8 @@ h3 {
   .document-upload,
   .document-row,
   .compact-form-grid,
+  .company-summary-grid,
+  .traceability-card,
   .invoice-line-editor,
   .series-form,
   .customer-form,
@@ -1230,7 +1502,8 @@ h3 {
   .einvoice-summary,
   .einvoice-row,
   .sif-summary,
-  .sif-row {
+  .sif-row,
+  .timeline-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -1270,6 +1543,7 @@ h3 {
   .status-strip,
   .module-rail,
   .metrics-grid,
+  .preprod-readiness-grid,
   .saas-grid,
   .tenant-switcher {
     grid-template-columns: 1fr;
@@ -1293,6 +1567,8 @@ h3 {
   .document-upload,
   .document-row,
   .compact-form-grid,
+  .company-summary-grid,
+  .traceability-card,
   .invoice-line-editor,
   .series-form,
   .customer-form,
@@ -1304,7 +1580,8 @@ h3 {
   .einvoice-summary,
   .einvoice-row,
   .sif-summary,
-  .sif-row {
+  .sif-row,
+  .timeline-row {
     grid-template-columns: 1fr;
   }
 }
