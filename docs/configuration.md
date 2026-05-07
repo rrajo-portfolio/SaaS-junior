@@ -49,6 +49,8 @@ No `.env` file or `.env` template is stored in this repository.
 | `PREPROD_SECRET_SOURCE` | External secret source used for shared preproduction. |
 | `PREPROD_DEMO_DATA_MODE` | Data policy for shared preproduction. Must indicate demo-only data. |
 | `PREPROD_SMOKE_TEST_MODE` | Smoke-test evidence mode for shared preproduction. |
+| `PUBLIC_DEMO_BASIC_AUTH_USER` | Temporary public-demo perimeter-auth username injected outside Git. |
+| `PUBLIC_DEMO_BASIC_AUTH_PASSWORD` | Temporary public-demo perimeter-auth password injected outside Git. |
 
 ## Local Setup
 

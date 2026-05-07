@@ -78,6 +78,17 @@ Use one of these options:
 - Kubernetes cluster with ingress controller, TLS and OIDC configured.
 - Temporary tunnel only if it provides HTTPS and OIDC is enforced before the tunnel is opened.
 
+For a short client demo without buying a domain, a temporary Quick Tunnel can expose only the Nginx proxy:
+
+```powershell
+$env:PUBLIC_DEMO_BASIC_AUTH_USER = "reviewer"
+$env:PUBLIC_DEMO_BASIC_AUTH_PASSWORD = "<set outside Git>"
+docker compose -f infra/docker/docker-compose.preprod.yml -f infra/docker/docker-compose.public-demo.yml up -d --build nginx
+.\scripts\start-quick-tunnel.ps1 -BaseUrl "http://localhost:8080"
+```
+
+This returns a temporary `https://*.trycloudflare.com` URL. Keep the tunnel process open while the reviewer uses it. Do not use this as production or long-lived preproduction.
+
 ## Do Not Do Yet
 
 - Do not publish the current demo mode to the internet.

@@ -1,6 +1,8 @@
 param(
     [string]$BaseUrl = $env:PREPROD_PUBLIC_ORIGIN,
-    [switch]$SkipHttpChecks
+    [switch]$SkipHttpChecks,
+    [string]$BasicAuthUser = $env:PUBLIC_DEMO_BASIC_AUTH_USER,
+    [string]$BasicAuthPassword = $env:PUBLIC_DEMO_BASIC_AUTH_PASSWORD
 )
 
 $ErrorActionPreference = "Stop"
@@ -83,13 +85,19 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
 }
 
 if (-not $SkipHttpChecks) {
+    $headers = @{}
+    if (-not [string]::IsNullOrWhiteSpace($BasicAuthUser) -and -not [string]::IsNullOrWhiteSpace($BasicAuthPassword)) {
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes("${BasicAuthUser}:${BasicAuthPassword}")
+        $headers.Authorization = "Basic $([Convert]::ToBase64String($bytes))"
+    }
+
     try {
-        $health = Invoke-WebRequest -UseBasicParsing -Uri "$($BaseUrl.TrimEnd('/'))/healthz" -TimeoutSec 15
+        $health = Invoke-WebRequest -UseBasicParsing -Uri "$($BaseUrl.TrimEnd('/'))/healthz" -Headers $headers -TimeoutSec 15
         if ($health.StatusCode -ne 200) {
             Write-Output "FIX_REQUIRED healthz_status=$($health.StatusCode)"
             exit 1
         }
-        $apiHealth = Invoke-WebRequest -UseBasicParsing -Uri "$($BaseUrl.TrimEnd('/'))/api/health" -TimeoutSec 15
+        $apiHealth = Invoke-WebRequest -UseBasicParsing -Uri "$($BaseUrl.TrimEnd('/'))/api/health" -Headers $headers -TimeoutSec 15
         if ($apiHealth.StatusCode -ne 200) {
             Write-Output "FIX_REQUIRED api_health_status=$($apiHealth.StatusCode)"
             exit 1

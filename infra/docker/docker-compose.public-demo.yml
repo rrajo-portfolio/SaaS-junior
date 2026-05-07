@@ -1,0 +1,12 @@
+services:
+  nginx:
+    environment:
+      PUBLIC_DEMO_BASIC_AUTH_USER: ${PUBLIC_DEMO_BASIC_AUTH_USER:?Set PUBLIC_DEMO_BASIC_AUTH_USER outside Git}
+      PUBLIC_DEMO_BASIC_AUTH_PASSWORD: ${PUBLIC_DEMO_BASIC_AUTH_PASSWORD:?Set PUBLIC_DEMO_BASIC_AUTH_PASSWORD outside Git}
+    command:
+      - /bin/sh
+      - -c
+      - |
+        htpasswd -bc /etc/nginx/.htpasswd "$$PUBLIC_DEMO_BASIC_AUTH_USER" "$$PUBLIC_DEMO_BASIC_AUTH_PASSWORD"
+        printf '%s\n' 'auth_basic "Fiscal SaaS preprod";' 'auth_basic_user_file /etc/nginx/.htpasswd;' > /etc/nginx/conf.d/public-auth.conf
+        nginx -g "daemon off;"
