@@ -13,7 +13,9 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
 
 $BaseUrl = $BaseUrl.TrimEnd("/")
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$headers = @{}
+$headers = @{
+  "ngrok-skip-browser-warning" = "true"
+}
 
 if (-not [string]::IsNullOrWhiteSpace($BasicAuthUser) -and -not [string]::IsNullOrWhiteSpace($BasicAuthPassword)) {
   $bytes = [System.Text.Encoding]::UTF8.GetBytes("${BasicAuthUser}:${BasicAuthPassword}")

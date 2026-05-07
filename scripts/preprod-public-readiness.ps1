@@ -85,7 +85,9 @@ if ([string]::IsNullOrWhiteSpace($BaseUrl)) {
 }
 
 if (-not $SkipHttpChecks) {
-    $headers = @{}
+    $headers = @{
+        "ngrok-skip-browser-warning" = "true"
+    }
     if (-not [string]::IsNullOrWhiteSpace($BasicAuthUser) -and -not [string]::IsNullOrWhiteSpace($BasicAuthPassword)) {
         $bytes = [System.Text.Encoding]::UTF8.GetBytes("${BasicAuthUser}:${BasicAuthPassword}")
         $headers.Authorization = "Basic $([Convert]::ToBase64String($bytes))"
