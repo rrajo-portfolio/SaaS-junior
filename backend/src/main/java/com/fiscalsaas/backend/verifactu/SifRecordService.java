@@ -242,6 +242,8 @@ public class SifRecordService {
 		payload.put("tenantId", tenantId);
 		payload.put("invoiceId", invoice.id());
 		payload.put("invoiceNumber", invoice.invoiceNumber());
+		payload.put("fiscalNumber", invoice.fiscalNumber());
+		payload.put("seriesCode", invoice.seriesCode());
 		payload.put("invoiceType", invoice.invoiceType());
 		payload.put("invoiceStatus", invoice.status());
 		payload.put("issueDate", invoice.issueDate().toString());

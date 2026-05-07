@@ -65,6 +65,13 @@ class DocumentControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].tenantId").value(TENANT_NORTE));
 
+		mockMvc.perform(get("/api/tenants/{tenantId}/documents", TENANT_NORTE)
+						.param("companyId", COMPANY_NORTE)
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].company.id").value(COMPANY_NORTE));
+
 		mockMvc.perform(get("/api/tenants/{tenantId}/documents/{documentId}/download", TENANT_NORTE, documentId)
 						.header("X-User-Email", ANA)
 						.header("X-Tenant-Id", TENANT_NORTE))

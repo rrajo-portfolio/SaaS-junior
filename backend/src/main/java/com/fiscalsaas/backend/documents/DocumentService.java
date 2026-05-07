@@ -51,9 +51,15 @@ public class DocumentService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<DocumentResponse> listDocuments(String tenantId, HttpServletRequest request) {
+	public List<DocumentResponse> listDocuments(String tenantId, String companyId, HttpServletRequest request) {
 		tenantAccess.requireTenantAccess(tenantId, request);
-		return documents.findByTenant_IdOrderByUpdatedAtDesc(tenantId)
+		String normalizedCompanyId = normalizeText(companyId);
+		if (normalizedCompanyId != null) {
+			requireCompany(tenantId, normalizedCompanyId);
+		}
+		return (normalizedCompanyId == null
+				? documents.findByTenant_IdOrderByUpdatedAtDesc(tenantId)
+				: documents.findByTenant_IdAndCompany_IdOrderByUpdatedAtDesc(tenantId, normalizedCompanyId))
 				.stream()
 				.map(document -> DocumentResponse.from(document, requireLatestVersion(document)))
 				.toList();
@@ -152,5 +158,12 @@ public class DocumentService {
 			return "Documento fiscal";
 		}
 		return title.trim();
+	}
+
+	private String normalizeText(String value) {
+		if (value == null || value.isBlank()) {
+			return null;
+		}
+		return value.trim();
 	}
 }

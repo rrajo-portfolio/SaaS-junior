@@ -8,7 +8,8 @@ public enum InvoiceStatus {
 	DRAFT,
 	ISSUED,
 	RECTIFIED,
-	CANCELLED;
+	CANCELLED,
+	CANCELLED_LOCAL;
 
 	public static InvoiceStatus fromValue(String value) {
 		if (value == null || value.isBlank()) {

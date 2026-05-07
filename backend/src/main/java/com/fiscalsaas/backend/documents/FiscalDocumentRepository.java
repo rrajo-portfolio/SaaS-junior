@@ -11,5 +11,8 @@ public interface FiscalDocumentRepository extends JpaRepository<FiscalDocument, 
 	List<FiscalDocument> findByTenant_IdOrderByUpdatedAtDesc(String tenantId);
 
 	@EntityGraph(attributePaths = {"tenant", "company"})
+	List<FiscalDocument> findByTenant_IdAndCompany_IdOrderByUpdatedAtDesc(String tenantId, String companyId);
+
+	@EntityGraph(attributePaths = {"tenant", "company"})
 	Optional<FiscalDocument> findByIdAndTenant_Id(String id, String tenantId);
 }

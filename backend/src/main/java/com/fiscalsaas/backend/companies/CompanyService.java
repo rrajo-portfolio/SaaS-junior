@@ -45,9 +45,12 @@ public class CompanyService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<CompanyResponse> listCompanies(String tenantId, HttpServletRequest request) {
+	public List<CompanyResponse> listCompanies(String tenantId, String search, HttpServletRequest request) {
 		tenantAccess.requireTenantAccess(tenantId, request);
-		return companies.findByTenantIdOrderByLegalNameAsc(tenantId)
+		String normalizedSearch = normalizeSearch(search);
+		return (normalizedSearch == null
+				? companies.findByTenantIdOrderByLegalNameAsc(tenantId)
+				: companies.searchByTenant(tenantId, normalizedSearch))
 				.stream()
 				.map(CompanyResponse::from)
 				.toList();
@@ -189,5 +192,12 @@ public class CompanyService {
 			throw new ApiValidationException("Unsupported status.");
 		}
 		return normalized;
+	}
+
+	private String normalizeSearch(String search) {
+		if (search == null || search.isBlank()) {
+			return null;
+		}
+		return search.trim();
 	}
 }

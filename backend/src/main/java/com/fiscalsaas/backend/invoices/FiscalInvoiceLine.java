@@ -38,6 +38,18 @@ public class FiscalInvoiceLine {
 	@Column(name = "tax_rate", nullable = false, precision = 5, scale = 2)
 	private BigDecimal taxRate;
 
+	@Column(name = "discount_percent", nullable = false, precision = 5, scale = 2)
+	private BigDecimal discountPercent;
+
+	@Column(name = "withholding_percent", nullable = false, precision = 5, scale = 2)
+	private BigDecimal withholdingPercent;
+
+	@Column(name = "withholding_amount", nullable = false, precision = 19, scale = 2)
+	private BigDecimal withholdingAmount;
+
+	@Column(name = "tax_category", nullable = false, length = 40)
+	private String taxCategory;
+
 	@Column(name = "line_base", nullable = false, precision = 19, scale = 2)
 	private BigDecimal lineBase;
 
@@ -57,6 +69,10 @@ public class FiscalInvoiceLine {
 			BigDecimal quantity,
 			BigDecimal unitPrice,
 			BigDecimal taxRate,
+			BigDecimal discountPercent,
+			BigDecimal withholdingPercent,
+			BigDecimal withholdingAmount,
+			String taxCategory,
 			BigDecimal lineBase,
 			BigDecimal taxAmount,
 			BigDecimal lineTotal) {
@@ -68,6 +84,10 @@ public class FiscalInvoiceLine {
 		line.quantity = quantity;
 		line.unitPrice = unitPrice;
 		line.taxRate = taxRate;
+		line.discountPercent = discountPercent;
+		line.withholdingPercent = withholdingPercent;
+		line.withholdingAmount = withholdingAmount;
+		line.taxCategory = taxCategory;
 		line.lineBase = lineBase;
 		line.taxAmount = taxAmount;
 		line.lineTotal = lineTotal;
@@ -92,6 +112,22 @@ public class FiscalInvoiceLine {
 
 	public BigDecimal taxRate() {
 		return taxRate;
+	}
+
+	public BigDecimal discountPercent() {
+		return discountPercent;
+	}
+
+	public BigDecimal withholdingPercent() {
+		return withholdingPercent;
+	}
+
+	public BigDecimal withholdingAmount() {
+		return withholdingAmount;
+	}
+
+	public String taxCategory() {
+		return taxCategory;
 	}
 
 	public BigDecimal lineBase() {

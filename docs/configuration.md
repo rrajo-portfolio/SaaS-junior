@@ -28,6 +28,7 @@ No `.env` file or `.env` template is stored in this repository.
 | `VERIFACTU_MODE` | Verifactu adapter mode. Production must stay disabled until an explicit validated phase. |
 | `AEAT_PRODUCTION_ENABLED` | Guard flag for AEAT production usage. |
 | `APP_DOCUMENT_STORAGE_PATH` | Backend filesystem path for preproduction document binaries. |
+| `APP_DOCUMENT_MAX_BYTES` | Backend document binary size limit used by the storage validator. |
 | `APP_DOCUMENT_MAX_FILE_SIZE` | Maximum accepted single document upload size. |
 | `APP_DOCUMENT_MAX_REQUEST_SIZE` | Maximum accepted multipart request size. |
 | `JENKINS_ADMIN_ID` | Local Jenkins bootstrap administrator username. |
