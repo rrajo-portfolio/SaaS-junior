@@ -40,6 +40,20 @@ class CompanyControllerTests {
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].tenantId").value(TENANT_NORTE));
 
+		mockMvc.perform(get("/api/tenants/{tenantId}/companies", TENANT_NORTE)
+						.param("search", "Alba")
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].legalName").value("Alba Retail Group SL"));
+
+		mockMvc.perform(get("/api/tenants/{tenantId}/companies", TENANT_NORTE)
+						.param("search", "B87654321")
+						.header("X-User-Email", ANA)
+						.header("X-Tenant-Id", TENANT_NORTE))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[0].taxId").value("B87654321"));
+
 		mockMvc.perform(get("/api/tenants/{tenantId}/business-relationships", TENANT_NORTE)
 						.header("X-User-Email", ANA)
 						.header("X-Tenant-Id", TENANT_NORTE))

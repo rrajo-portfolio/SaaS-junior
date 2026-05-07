@@ -8,6 +8,10 @@ public record InvoiceLineResponse(
 		BigDecimal quantity,
 		BigDecimal unitPrice,
 		BigDecimal taxRate,
+		BigDecimal discountPercent,
+		BigDecimal withholdingPercent,
+		BigDecimal withholdingAmount,
+		String taxCategory,
 		BigDecimal lineBase,
 		BigDecimal taxAmount,
 		BigDecimal lineTotal) {
@@ -18,6 +22,10 @@ public record InvoiceLineResponse(
 				line.quantity(),
 				line.unitPrice(),
 				line.taxRate(),
+				line.discountPercent(),
+				line.withholdingPercent(),
+				line.withholdingAmount(),
+				line.taxCategory(),
 				line.lineBase(),
 				line.taxAmount(),
 				line.lineTotal());

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,8 +28,11 @@ public class CompanyController {
 	}
 
 	@GetMapping("/companies")
-	List<CompanyResponse> companies(@PathVariable String tenantId, HttpServletRequest request) {
-		return companyService.listCompanies(tenantId, request);
+	List<CompanyResponse> companies(
+			@PathVariable String tenantId,
+			@RequestParam(required = false) String search,
+			HttpServletRequest request) {
+		return companyService.listCompanies(tenantId, search, request);
 	}
 
 	@GetMapping("/companies/{companyId}")

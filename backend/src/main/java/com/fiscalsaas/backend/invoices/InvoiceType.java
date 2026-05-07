@@ -5,6 +5,8 @@ import java.util.Arrays;
 import com.fiscalsaas.backend.api.ApiValidationException;
 
 public enum InvoiceType {
+	STANDARD,
+	CORRECTIVE,
 	ISSUED,
 	RECEIVED,
 	RECTIFYING;
@@ -17,5 +19,9 @@ public enum InvoiceType {
 				.filter(type -> type.name().equals(value.trim().toUpperCase()))
 				.findFirst()
 				.orElseThrow(() -> new ApiValidationException("Unsupported invoiceType."));
+	}
+
+	public boolean corrective() {
+		return this == CORRECTIVE || this == RECTIFYING;
 	}
 }

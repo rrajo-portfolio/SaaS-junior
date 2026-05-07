@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface FiscalInvoiceLineRepository extends JpaRepository<FiscalInvoiceLine, String> {
 	List<FiscalInvoiceLine> findByInvoice_IdOrderByLineNumberAsc(String invoiceId);
+
+	long deleteByInvoice_Id(String invoiceId);
 }

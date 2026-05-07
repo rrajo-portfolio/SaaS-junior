@@ -29,8 +29,11 @@ public class DocumentController {
 	}
 
 	@GetMapping
-	List<DocumentResponse> documents(@PathVariable String tenantId, HttpServletRequest request) {
-		return documentService.listDocuments(tenantId, request);
+	List<DocumentResponse> documents(
+			@PathVariable String tenantId,
+			@RequestParam(required = false) String companyId,
+			HttpServletRequest request) {
+		return documentService.listDocuments(tenantId, companyId, request);
 	}
 
 	@PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
