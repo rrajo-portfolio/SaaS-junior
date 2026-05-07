@@ -105,6 +105,140 @@ test('runs the local SaaS fiscal flow end to end', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Cobalto Industrial SA/ })).toBeVisible()
 })
 
+test('matches the complete app guide sections and controls', async ({ page }) => {
+  const state = createApiState()
+  state.documents[tenantNorte].push(documentSummary('doc-guide-1', tenantNorte, owner))
+  state.auditEvents[owner.id] = [auditEvent('audit-guide-1', tenantNorte, owner.id, 'GUIDE_TRACE_CREATED')]
+
+  await mockApi(page, state)
+  await page.goto('/')
+
+  await expect(page).toHaveTitle(/Fiscal SaaS/)
+  await expect(page.getByRole('heading', { name: 'SaaS fiscal operativo' })).toBeVisible()
+
+  const navigation = page.getByLabel('Navegacion principal')
+  await expect(navigation.getByRole('link', { name: 'Panel' })).toHaveAttribute('href', '#dashboard')
+  await expect(navigation.getByRole('link', { name: 'Empresas' })).toHaveAttribute('href', '#companies')
+  await expect(navigation.getByRole('link', { name: 'Documentos' })).toHaveAttribute('href', '#documents')
+  await expect(navigation.getByRole('link', { name: 'Facturas' })).toHaveAttribute('href', '#invoices')
+  await expect(navigation.getByRole('link', { name: 'E-invoice' })).toHaveAttribute('href', '#einvoice')
+  await expect(navigation.getByRole('link', { name: 'SIF local' })).toHaveAttribute('href', '#sif')
+
+  await expect(page.getByRole('searchbox', { name: 'Buscar empresa' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Actualizar' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Estado de servicios' })).toContainText('fiscal-saas-backend')
+  await expect(page.getByRole('region', { name: 'Contexto de tenant' })).toContainText('Norte Asesores')
+  await expect(page.getByLabel('Branding configurable por tenant')).toBeVisible()
+  await expect(page.getByRole('tab', { name: /Norte Asesores/ })).toHaveAttribute('aria-selected', 'true')
+
+  await expect(page.getByRole('region', { name: 'Control de preproduccion' })).toContainText('Separacion operativa')
+  await expect(page.getByRole('region', { name: 'Estado del sistema' })).toContainText('Ultimo smoke')
+  await expect(page.getByText('Datos demo controlados')).toBeVisible()
+  await expect(page.getByText('Buscador global')).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Buscar en tenant' }).fill('Alba')
+  await expect(page.getByRole('button', { name: /Empresa Alba Retail Group SL/ })).toBeVisible()
+  await page.getByRole('searchbox', { name: 'Buscar en tenant' }).fill('')
+
+  await expect(page.getByRole('region', { name: 'Resumen SaaS' })).toContainText('Empresas')
+  await expect(page.getByRole('list', { name: 'Empresas del tenant' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Nueva empresa' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Crear', exact: true })).toBeVisible()
+
+  const detail = page.getByLabel('Detalle de empresa')
+  await expect(detail).toContainText('Datos basicos')
+  await expect(detail.getByRole('button', { name: 'Guardar', exact: true })).toBeVisible()
+  await expect(detail.getByRole('button', { name: 'Desactivar', exact: true })).toBeVisible()
+
+  const summary = page.getByRole('region', { name: 'Resumen operativo de empresa' })
+  await expect(summary).toContainText('Emitidas')
+  await expect(summary).toContainText('Pendiente')
+  await expect(summary.getByRole('button', { name: 'Exportar CSV' })).toBeVisible()
+  await expect(page.getByLabel('Dashboard grafico de facturas')).toBeVisible()
+  await expect(page.getByLabel('Notificaciones internas')).toBeVisible()
+
+  const fiscal = page.getByRole('region', { name: 'Configuracion fiscal de empresa' })
+  await expect(fiscal.getByRole('button', { name: 'Guardar fiscalidad' })).toBeVisible()
+  await expect(fiscal.getByRole('button', { name: 'Crear serie' })).toBeVisible()
+  await expect(fiscal).toContainText('F-2026-')
+
+  const customers = page.getByRole('region', { name: 'Clientes de facturacion' })
+  await expect(customers.getByRole('searchbox', { name: 'Buscar cliente' })).toBeVisible()
+  await expect(customers.getByRole('button', { name: 'CSV' })).toBeVisible()
+  await expect(customers.getByRole('button', { name: 'Crear cliente' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Datos operativos por empresa' }).getByRole('link', { name: 'Facturas' })).toHaveAttribute('href', '#invoices')
+
+  const documents = page.getByRole('region', { name: 'Documentos por empresa' })
+  await expect(documents.getByRole('searchbox', { name: 'Buscar documento' })).toBeVisible()
+  await expect(documents.getByRole('button', { name: 'Subir' })).toBeVisible()
+  await expect(documents.getByRole('button', { name: 'Descargar' })).toBeVisible()
+  await documents.getByRole('button', { name: 'Eventos' }).click()
+  await expect(documents).toContainText('DOCUMENT_VIEWED')
+  await expect(documents).toContainText('Evento demo para documento')
+
+  const invoices = page.getByRole('region', { name: 'Facturas por empresa' })
+  await expect(invoices.getByRole('searchbox', { name: 'Buscar factura' })).toBeVisible()
+  await expect(invoices.getByLabel('Estado')).toBeVisible()
+  await expect(invoices.getByRole('button', { name: 'Guardar borrador' })).toBeVisible()
+  await expect(invoices.getByRole('button', { name: 'Linea' })).toBeVisible()
+
+  const invoiceNumber = `GUIA-${Date.now()}`
+  await page.getByLabel('Numero').fill(invoiceNumber)
+  await page.getByLabel('Descripcion').fill('Servicio guia funcional')
+  await page.getByLabel('Cantidad').fill('1')
+  await page.getByLabel('Precio').fill('80')
+  await page.getByLabel('IVA %').fill('21')
+  await expect(page.getByLabel('Totales calculados')).toContainText('96,80')
+  await invoices.getByRole('button', { name: 'Guardar borrador' }).click()
+  await expect(page.getByText('Factura borrador creada')).toBeVisible()
+  await expect(invoices.getByText(invoiceNumber).first()).toBeVisible()
+  await expect(invoices.getByRole('button', { name: 'Ver' })).toBeVisible()
+  await expect(invoices.getByRole('button', { name: 'Editar' })).toBeEnabled()
+  await expect(invoices.getByRole('button', { name: 'Emitir' })).toBeEnabled()
+  await expect(invoices.getByRole('button', { name: 'PDF' })).toBeDisabled()
+  await expect(invoices.getByRole('button', { name: 'Rectificar' })).toBeDisabled()
+  await expect(invoices.getByRole('button', { name: 'Anular' })).toBeDisabled()
+
+  await invoices.getByRole('button', { name: 'Editar' }).click()
+  await expect(invoices.getByRole('button', { name: 'Cancelar' })).toBeVisible()
+  await invoices.getByRole('button', { name: 'Cancelar' }).click()
+  await invoices.getByRole('button', { name: 'Emitir' }).click()
+  await expect(page.getByText('Factura emitida', { exact: true })).toBeVisible()
+  await expect(invoices.getByRole('button', { name: 'PDF' })).toBeEnabled()
+  await expect(invoices.getByRole('button', { name: 'Rectificar' })).toBeEnabled()
+  await expect(invoices.getByRole('button', { name: 'Anular' })).toBeEnabled()
+
+  await expect(page.getByLabel('Cobros y estado de factura')).toContainText('Factura seleccionada')
+  await expect(page.getByRole('region', { name: 'Timeline de factura' })).toBeVisible()
+  await page.getByLabel('Pago', { exact: true }).fill('96.8')
+  await page.getByRole('button', { name: 'Registrar pago' }).click()
+  await expect(page.getByText('Pago registrado')).toBeVisible()
+  await page.getByRole('button', { name: 'PDF' }).click()
+  await expect(page.getByText('PDF descargado')).toBeVisible()
+  await expect(page.getByText(/PDF hash/)).toBeVisible()
+
+  const einvoice = page.getByRole('region', { name: 'Factura electronica local' })
+  await einvoice.getByRole('button', { name: 'Generar' }).click()
+  await expect(einvoice).toContainText('LOCAL STUB')
+  await expect(einvoice).toContainText('Artifact ID')
+
+  const sif = page.getByRole('region', { name: 'Registro SIF local' })
+  await sif.getByRole('button', { name: 'Registrar' }).click()
+  await expect(sif).toContainText('LOCAL STUB')
+  await expect(sif).toContainText('Secuencia')
+
+  const evidence = page.getByRole('region', { name: 'Auditoria y exportacion de evidencia' })
+  await expect(evidence.getByRole('searchbox', { name: 'Buscar auditoria' })).toBeVisible()
+  await expect(evidence.getByRole('button', { name: 'CSV' })).toBeVisible()
+  await evidence.getByRole('button', { name: 'Generar ZIP' }).click()
+  await expect(page.getByText('Paquete de evidencia generado')).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Timeline de empresa' })).toBeVisible()
+
+  await expect(page.getByRole('region', { name: 'Plataforma SaaS' })).toContainText('Aislamiento y evidencias')
+  await page.getByRole('tab', { name: /Cobalto Industrial/ }).click()
+  await expect(page.getByRole('button', { name: /Cobalto Industrial SA/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Norte Asesores SL/ })).toHaveCount(0)
+})
+
 type Company = ReturnType<typeof company>
 
 type ApiState = {
@@ -321,6 +455,24 @@ async function mockApi(page: Page, state: ApiState) {
       Object.assign(updated ?? {}, body)
       return fulfill(route, updated)
     }
+    if (path.includes('/documents/') && path.endsWith('/download') && method === 'GET') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'content-disposition': 'attachment; filename="documento-demo.pdf"' },
+        body: '%PDF-1.4',
+      })
+    }
+    if (path.includes('/documents/') && path.endsWith('/events') && method === 'GET') {
+      return fulfill(route, [
+        {
+          id: 'document-event-guide-1',
+          eventType: 'DOCUMENT_VIEWED',
+          details: 'Evento demo para documento',
+          createdAt: new Date().toISOString(),
+        },
+      ])
+    }
     if (path.includes('/documents')) {
       if (method === 'POST') {
         const created = {
@@ -496,6 +648,36 @@ function company(id: string, tenantId: string, legalName: string, taxId: string,
     countryCode: 'ES',
     relationshipType,
     status: 'ACTIVE',
+  }
+}
+
+function documentSummary(id: string, tenantId: string, companyValue: Company) {
+  return {
+    id,
+    tenantId,
+    company: companyValue,
+    documentType: 'EVIDENCE',
+    title: 'Documento demo de guia',
+    status: 'ACTIVE',
+    currentVersion: 1,
+    latestSha256: `hash-${id}-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa`,
+    latestByteSize: 512,
+    latestFilename: 'documento-demo.pdf',
+    updatedAt: new Date().toISOString(),
+  }
+}
+
+function auditEvent(id: string, tenantId: string, companyId: string, eventType: string) {
+  return {
+    id,
+    tenantId,
+    companyId,
+    actorEmail: 'ana.admin@fiscalsaas.local',
+    eventType,
+    entityType: 'UI',
+    entityId: companyId,
+    eventHash: 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    occurredAt: new Date().toISOString(),
   }
 }
 
