@@ -38,6 +38,11 @@ No `.env` file or `.env` template is stored in this repository.
 | `JENKINS_URL` | Local URL advertised by the Jenkins controller. |
 | `KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME` | Local Keycloak bootstrap administrator username. |
 | `KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD` | Local Keycloak bootstrap administrator password. |
+| `PREPROD_PUBLIC_ORIGIN` | HTTPS origin used for shared preproduction reviewer access. |
+| `PREPROD_TLS_MODE` | TLS mode for shared preproduction, for example managed edge TLS or controlled tunnel TLS. |
+| `PREPROD_AUTH_MODE` | Authentication gate for shared preproduction. Must be `oidc` before sharing externally. |
+| `PREPROD_BACKUP_MODE` | Backup evidence mode used before sharing preproduction. |
+| `PREPROD_ROLLBACK_REF` | Git commit, tag or image reference used as rollback target for shared preproduction. |
 
 ## Local Setup
 
