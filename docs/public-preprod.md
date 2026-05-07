@@ -89,6 +89,19 @@ docker compose -f infra/docker/docker-compose.preprod.yml -f infra/docker/docker
 
 This returns a temporary `https://*.trycloudflare.com` URL. Keep the tunnel process open while the reviewer uses it. Do not use this as production or long-lived preproduction.
 
+Ngrok can be used instead when the machine has a verified ngrok account and local authtoken. A free ngrok account can provide a static dev domain in the ngrok dashboard.
+
+```powershell
+$env:NGROK_AUTHTOKEN = "<set outside Git>"
+$env:NGROK_DOMAIN = "<optional-static-domain-from-ngrok>"
+$env:PUBLIC_DEMO_BASIC_AUTH_USER = "reviewer"
+$env:PUBLIC_DEMO_BASIC_AUTH_PASSWORD = "<set outside Git>"
+docker compose -f infra/docker/docker-compose.preprod.yml -f infra/docker/docker-compose.public-demo.yml up -d --build nginx
+.\scripts\start-ngrok-tunnel.ps1 -BaseUrl "http://localhost:8080"
+```
+
+If `NGROK_DOMAIN` is omitted, ngrok creates a dynamic URL. If it is set, ngrok requests that static dev domain.
+
 ## Do Not Do Yet
 
 - Do not publish the current demo mode to the internet.

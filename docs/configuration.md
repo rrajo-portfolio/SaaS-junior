@@ -51,6 +51,8 @@ No `.env` file or `.env` template is stored in this repository.
 | `PREPROD_SMOKE_TEST_MODE` | Smoke-test evidence mode for shared preproduction. |
 | `PUBLIC_DEMO_BASIC_AUTH_USER` | Temporary public-demo perimeter-auth username injected outside Git. |
 | `PUBLIC_DEMO_BASIC_AUTH_PASSWORD` | Temporary public-demo perimeter-auth password injected outside Git. |
+| `NGROK_AUTHTOKEN` | Local ngrok account authtoken used to start a public tunnel. Never commit it. |
+| `NGROK_DOMAIN` | Optional ngrok static/free dev domain assigned in the ngrok dashboard. |
 
 ## Local Setup
 
